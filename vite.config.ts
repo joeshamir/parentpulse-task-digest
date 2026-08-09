@@ -4,9 +4,6 @@ export default defineConfig({
   tanstackStart: {
     server: { entry: "server" },
   },
-  preview: {
-    allowedHosts: true,
-  },
   server: {
     allowedHosts: true,
   },
