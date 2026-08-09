@@ -13,6 +13,13 @@ import { env } from './env.js';
 import { extractTask } from './extract.js';
 import { sendTask } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
+import {
+  startHealthServer,
+  setState,
+  markQr,
+  markMessage,
+  markTaskSent,
+} from './health.js';
 
 const logger = pino({ level: 'warn' });
 
