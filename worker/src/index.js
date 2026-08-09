@@ -116,8 +116,16 @@ async function connect() {
 
   socket.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
-      console.log('[whatsapp] scan this QR in WhatsApp > Linked devices:');
-      qrcode.generate(qr, { small: true });
+      qrAttempt += 1;
+      console.log(`\n[whatsapp] ===== QR #${qrAttempt} (use the NEWEST one) =====`);
+      console.log('[whatsapp] Easiest: open this link in your browser and scan the image:');
+      console.log(
+        `[whatsapp] https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qr)}`,
+      );
+      console.log('[whatsapp] Or scan the code below in WhatsApp > Linked devices:');
+      qrcode.generate(qr, { small: false });
+      console.log(`[whatsapp] raw pairing string (fallback): ${qr}`);
+      console.log('[whatsapp] ===== end QR =====\n');
     }
     if (connection === 'open') {
       reconnectDelay = 2000;
