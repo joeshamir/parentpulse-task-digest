@@ -3,10 +3,10 @@
   "private": true,
   "sideEffects": false,
   "type": "module",
-  "scripts": {
-  "start": "node index.js",
-  "test": "echo \"Error: no test specified\" && exit 1"
-},
+ "scripts": {
+  "build": "vite build",
+  "start": "node .output/server/index.mjs"
+}
   "engines": {
     "node": ">=20.0.0"
   },
