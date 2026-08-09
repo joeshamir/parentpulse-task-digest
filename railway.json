@@ -10,11 +10,14 @@
         },
         "install": {
           "cmds": ["npm install"]
+        },
+        "build": {
+          "cmds": ["npm run build"]
         }
       }
     }
   },
   "deploy": {
-    "startCommand": "node .output/server/index.mjs"
+    "startCommand": "node dist/server/index.mjs"
   }
 }
