@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
+import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
 import { groups, isRecommended } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ function initials(name: string) {
 
 function GroupsScreen() {
   const { t, lang, toggle } = useLang();
+  const { user, signOut } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(groups.map((g) => [g.id, isRecommended(g)])),
@@ -193,6 +195,26 @@ function GroupsScreen() {
           >
             {lang === "en" ? "English" : "עברית"}
           </button>
+        </div>
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4">
+          <span className="min-w-0 truncate text-[15px] font-bold text-card-foreground">
+            {user?.email ?? t({ en: "Not signed in", he: "לא מחוברים" })}
+          </span>
+          {user ? (
+            <button
+              onClick={() => signOut()}
+              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-bold transition-colors hover:bg-accent"
+            >
+              {t({ en: "Sign out", he: "יציאה" })}
+            </button>
+          ) : (
+            <Link
+              to="/auth"
+              className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+            >
+              {t({ en: "Sign in", he: "כניסה" })}
+            </Link>
+          )}
         </div>
       </section>
 
