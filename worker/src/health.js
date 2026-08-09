@@ -1,0 +1,67 @@
+import http from 'node:http';
+
+const startedAt = Date.now();
+
+// Shared, non-sensitive status. No chat content, no secrets.
+export const status = {
+  state: 'starting', // starting | qr-pending | connected | disconnected
+  connected: false,
+  lastQrAt: null,
+  lastMessageAt: null,
+  lastTaskAt: null,
+  tasksSent: 0,
+};
+
+export function setState(state) {
+  status.state = state;
+  status.connected = state === 'connected';
+}
+
+export function markQr() {
+  status.lastQrAt = new Date().toISOString();
+  setState('qr-pending');
+}
+
+export function markMessage() {
+  status.lastMessageAt = new Date().toISOString();
+}
+
+export function markTaskSent() {
+  status.tasksSent += 1;
+  status.lastTaskAt = new Date().toISOString();
+}
+
+export function startHealthServer() {
+  const port = Number(process.env.PORT) || 8080;
+
+  const server = http.createServer((req, res) => {
+    const url = (req.url || '/').split('?')[0];
+    if (url !== '/' && url !== '/health') {
+      res.writeHead(404, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: 'not found' }));
+      return;
+    }
+
+    const body = {
+      service: 'parentpulse-worker',
+      ...status,
+      uptimeSeconds: Math.round((Date.now() - startedAt) / 1000),
+    };
+
+    res.writeHead(200, {
+      'content-type': 'application/json',
+      'cache-control': 'no-store',
+    });
+    res.end(JSON.stringify(body, null, 2));
+  });
+
+  server.on('error', (error) => {
+    console.error('[health] server error:', error.message);
+  });
+
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`[health] status endpoint listening on :${port} (/health)`);
+  });
+
+  return server;
+}

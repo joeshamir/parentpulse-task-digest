@@ -13,6 +13,13 @@ import { env } from './env.js';
 import { extractTask } from './extract.js';
 import { sendTask } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
+import {
+  startHealthServer,
+  setState,
+  markQr,
+  markMessage,
+  markTaskSent,
+} from './health.js';
 
 const logger = pino({ level: 'warn' });
 
@@ -88,9 +95,13 @@ async function handleMessage(sock, message) {
   }
   if (!text) return;
 
+  markMessage();
   const task = extractTask(text, groupName);
   // text stays in memory only; it is never written to disk or a database
-  if (task) await sendTask(task);
+  if (task) {
+    await sendTask(task);
+    markTaskSent();
+  }
 }
 
 // --- Connection --------------------------------------------------------
@@ -118,6 +129,7 @@ async function connect() {
   socket.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       qrAttempt += 1;
+      markQr();
       console.log(`\n[whatsapp] ===== QR #${qrAttempt} (use the NEWEST one) =====`);
       console.log('[whatsapp] Easiest: open this link in your browser and scan the image:');
       console.log(
@@ -130,16 +142,18 @@ async function connect() {
     }
     if (connection === 'open') {
       reconnectDelay = 2000;
+      setState('connected');
       console.log('[whatsapp] connected');
     }
     if (connection === 'close') {
-      const status = lastDisconnect?.error?.output?.statusCode;
-      if (status === DisconnectReason.loggedOut) {
+      setState('disconnected');
+      const code = lastDisconnect?.error?.output?.statusCode;
+      if (code === DisconnectReason.loggedOut) {
         console.error('[whatsapp] logged out — delete the auth volume and re-pair');
         return;
       }
       if (shuttingDown) return;
-      console.warn(`[whatsapp] disconnected (${status}); reconnecting in ${reconnectDelay}ms`);
+      console.warn(`[whatsapp] disconnected (${code}); reconnecting in ${reconnectDelay}ms`);
       setTimeout(() => {
         connect().catch((error) => console.error('[whatsapp] reconnect failed:', error.message));
       }, reconnectDelay);
@@ -161,6 +175,7 @@ async function connect() {
 
 console.log('[boot] ParentPulse worker starting');
 console.log(`[boot] auth dir: ${path.resolve(env.authDir)}`);
+startHealthServer();
 connect().catch((error) => {
   console.error('[boot] initial connect failed:', error?.stack || error);
   setTimeout(() => connect().catch(() => {}), 5000);
