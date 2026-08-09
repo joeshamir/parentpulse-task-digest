@@ -1,42 +1,62 @@
-# Deploy the WhatsApp Worker to Railway (Simple Plan)
+# Fix the crashing Railway deploy
 
-## Goal
-Get the new `worker/` background process running 24/7 on Railway so it can read WhatsApp group messages and send extracted tasks/summaries to the ParentPulse PWA.
+## What actually went wrong (plain English)
 
-## Why this is separate from the PWA
-The worker uses `Baileys`, a Node.js library that must stay running continuously and save WhatsApp login files locally. Lovable Cloud runs short-lived server functions, so the worker needs its own long-running home on Railway.
+Railway is not running your WhatsApp worker at all. It is running the **main app folder** instead.
 
-## Step 1: Create a new Railway project for the worker
-- In Railway, create a new project from the same GitHub repo.
-- Point Railway at the `worker/` folder as the service root (not the project root).
-- This keeps the PWA and worker completely separate.
+The main app folder has a Railway config that tries to start a small web server called `sirv`. That tool was never installed, so Railway tries to launch it, fails instantly with "could not determine executable to run", restarts, and fails again — that is the repeating error loop in your log.
 
-## Step 2: Add a persistent volume
-- In the Railway service settings, add a volume mounted at `/app/auth_session`.
-- This preserves the WhatsApp login session across deploys and restarts.
-- Without this, you would have to re-scan the QR code after every code update.
+Confirmed in the repo:
+- `railway.json` (project root) start command: `npx sirv dist --single --host 0.0.0.0 --port $PORT`
+- `sirv` is **not** listed anywhere in the root `package.json` dependencies
 
-## Step 3: Set the required environment variables
-Add these in Railway → Variables for the worker service:
+So there are two separate problems tangled together:
+1. Railway is pointed at the wrong folder (root instead of `worker/`).
+2. The root Railway config is broken anyway (missing tool).
 
-| Variable | What it is | Where to get it |
-|----------|-----------|-----------------|
-| `PARENTPULSE_INGEST_URL` | The PWA's task ingestion endpoint | `https://parentpulse-task-digest.lovable.app/api/public/ingest-task` |
-| `WORKER_SECRET` | A shared password between worker and PWA | Must match the `WORKER_SECRET` already stored in Lovable Cloud secrets |
-| `GROQ_API_KEY` | Your Groq API key for Hebrew voice transcription | From your Groq dashboard |
+## Decision needed: what should Railway host?
 
-## Step 4: Deploy and scan the QR code
-- Deploy the worker service.
-- Open the deploy logs in Railway.
-- The worker will print a QR code.
-- Open WhatsApp on your phone → Settings → Linked Devices → Link a Device → scan the QR code.
-- The worker is now logged in and will keep running.
+Your main app is already live on Lovable Cloud at `parentpulse-task-digest.lovable.app`. You do **not** need Railway to host it too. Railway is only needed for the WhatsApp worker, which must run 24/7.
 
-## Step 5: Verify it works
-- Send a message in one of your tracked WhatsApp groups (e.g. “Please pay 50 shekels for the zoo trip by Thursday”).
-- Check the ParentPulse Actions tab — the task should appear within seconds.
+Recommended: **Railway runs only the worker.**
 
-## Important notes
-- Do not add a Railway healthcheck to this service; it does not listen on any port, so a healthcheck will fail.
-- If you ever change `WORKER_SECRET`, you must update it in both Lovable Cloud and Railway so they stay matched.
-- The worker only processes messages from groups you selected in the ParentPulse Groups & Settings tab.
+## The fix
+
+### Step 1: Point the Railway service at the worker folder
+In Railway → your service → Settings → **Root Directory**, set it to:
+
+```text
+worker
+```
+
+This makes Railway read `worker/railway.json` and `worker/package.json` instead of the broken root ones. `worker/railway.json` already has the correct start command (`npm start`) and a restart policy.
+
+### Step 2: Remove the misleading root config
+Delete the root `railway.json`, since the root app is not meant to be deployed on Railway. Leaving it there will cause this same crash again if a service ever picks up the root folder.
+
+### Step 3: Add the persistent volume
+In Railway → service → Settings → Volumes, add a volume mounted at:
+
+```text
+/data
+```
+
+This is where the WhatsApp login is saved, so you only scan the QR code once instead of after every deploy.
+
+### Step 4: Set the worker's variables
+In Railway → Variables:
+
+| Variable | Value |
+|---|---|
+| `WORKER_SECRET` | the same value saved in Lovable Cloud secrets |
+| `USER_ID` | the parent account UUID |
+| `GROQ_API_KEY` | your Groq key (for Hebrew voice notes) |
+| `AUTH_DIR` | `/data/auth_session` |
+| `INGEST_URL` | `https://parentpulse-task-digest.lovable.app/api/public/ingest-task` |
+
+### Step 5: Redeploy and scan
+Redeploy, open the deploy logs, and scan the QR code with WhatsApp → Linked devices.
+
+## Notes
+- Do **not** add a Railway healthcheck to this service. The worker listens on no port, so a healthcheck marks every deploy as failed.
+- The only file change in this plan is deleting the root `railway.json`. The rest is Railway dashboard configuration you do yourself.
