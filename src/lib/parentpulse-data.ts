@@ -1,0 +1,151 @@
+export type Category = "school" | "sports" | "social";
+
+export type Task = {
+  id: string;
+  category: Category;
+  categoryLabel: { en: string; he: string };
+  title: { en: string; he: string };
+  due: { en: string; he: string };
+  urgent: boolean;
+  source: { en: string; he: string };
+};
+
+export const categoryFilters: {
+  key: "all" | Category;
+  label: { en: string; he: string };
+}[] = [
+  { key: "all", label: { en: "All", he: "הכול" } },
+  { key: "school", label: { en: "School", he: "בית ספר" } },
+  { key: "sports", label: { en: "Sports", he: "ספורט" } },
+  { key: "social", label: { en: "Social", he: "חברתי" } },
+];
+
+export const tasks: Task[] = [
+  {
+    id: "t1",
+    category: "school",
+    categoryLabel: { en: "School", he: "בית ספר" },
+    title: { en: "Pay ₪50 for the Zoo trip", he: "לשלם 50 ש״ח לטיול לגן החיות" },
+    due: { en: "Due Thursday 17:00", he: "עד יום חמישי 17:00" },
+    urgent: true,
+    source: { en: "From: Grade 4B", he: "מתוך: כיתה ד2" },
+  },
+  {
+    id: "t2",
+    category: "sports",
+    categoryLabel: { en: "Soccer U10", he: "כדורגל עד גיל 10" },
+    title: { en: "Bring white jersey for Friday match", he: "להביא חולצה לבנה למשחק ביום שישי" },
+    due: { en: "Due Friday 08:00", he: "עד יום שישי 08:00" },
+    urgent: true,
+    source: { en: "From: Hapoel U10 Parents", he: "מתוך: הורים הפועל עד 10" },
+  },
+  {
+    id: "t3",
+    category: "school",
+    categoryLabel: { en: "School", he: "בית ספר" },
+    title: { en: "Sign the swimming permission form", he: "לחתום על אישור שחייה" },
+    due: { en: "Due Sunday 12:00", he: "עד יום ראשון 12:00" },
+    urgent: false,
+    source: { en: "From: Grade 4B", he: "מתוך: כיתה ד2" },
+  },
+  {
+    id: "t4",
+    category: "social",
+    categoryLabel: { en: "Social", he: "חברתי" },
+    title: { en: "RSVP to Noa's birthday party", he: "לאשר הגעה ליום ההולדת של נועה" },
+    due: { en: "Due Monday 20:00", he: "עד יום שני 20:00" },
+    urgent: false,
+    source: { en: "From: Class Moms 4B", he: "מתוך: אמהות כיתה ד2" },
+  },
+  {
+    id: "t5",
+    category: "school",
+    categoryLabel: { en: "Parent Committee", he: "ועד הורים" },
+    title: { en: "Send ₪30 for the teacher gift", he: "להעביר 30 ש״ח למתנה למורה" },
+    due: { en: "Due Wednesday 21:00", he: "עד יום רביעי 21:00" },
+    urgent: true,
+    source: { en: "From: Committee 4B", he: "מתוך: ועד כיתה ד2" },
+  },
+];
+
+export type DigestItem = {
+  id: string;
+  group: { en: string; he: string };
+  title: { en: string; he: string };
+  time: { en: string; he: string };
+  body: { en: string; he: string };
+};
+
+export const digest: { today: DigestItem[]; week: DigestItem[] } = {
+  today: [
+    {
+      id: "d1",
+      group: { en: "Grade 4B", he: "כיתה ד2" },
+      title: { en: "Teacher posted trip photos", he: "המורה העלתה תמונות מהטיול" },
+      time: { en: "09:24", he: "09:24" },
+      body: {
+        en: "Miri shared 24 photos from yesterday's nature walk. No action needed — album stays open until Sunday.",
+        he: "מירי שיתפה 24 תמונות מהטיול אתמול. אין צורך בפעולה — האלבום פתוח עד יום ראשון.",
+      },
+    },
+    {
+      id: "d2",
+      group: { en: "Hapoel U10", he: "הפועל עד 10" },
+      title: { en: "Rain cancellation for afternoon sports", he: "ביטול אימון אחה״צ בגלל גשם" },
+      time: { en: "13:40", he: "13:40" },
+      body: {
+        en: "Today's 16:30 practice is cancelled due to rain. Coach Amit will confirm a makeup session later this week.",
+        he: "האימון ב-16:30 מבוטל בגלל גשם. המאמן עמית יעדכן על אימון השלמה בהמשך השבוע.",
+      },
+    },
+    {
+      id: "d3",
+      group: { en: "School Admin", he: "הנהלת בית הספר" },
+      title: { en: "Gate 2 closed for repairs", he: "שער 2 סגור לתיקונים" },
+      time: { en: "15:05", he: "15:05" },
+      body: {
+        en: "Pickup moves to Gate 1 for the rest of the week. Buses are unaffected.",
+        he: "האיסוף עובר לשער 1 עד סוף השבוע. אין שינוי בהסעות.",
+      },
+    },
+  ],
+  week: [
+    {
+      id: "w1",
+      group: { en: "Parent Committee", he: "ועד הורים" },
+      title: { en: "End-of-year party planning started", he: "התחילו לתכנן את מסיבת סוף השנה" },
+      time: { en: "Mon", he: "יום ב׳" },
+      body: {
+        en: "Three venue options were discussed. A vote will be opened next week — no response required yet.",
+        he: "נדונו שלוש אפשרויות למקום. ההצבעה תיפתח בשבוע הבא — אין צורך להגיב כרגע.",
+      },
+    },
+    {
+      id: "w2",
+      group: { en: "Grade 4B", he: "כיתה ד2" },
+      title: { en: "Math test moved to next Tuesday", he: "מבחן במתמטיקה נדחה ליום שלישי הבא" },
+      time: { en: "Tue", he: "יום ג׳" },
+      body: {
+        en: "The teacher shifted the test by one week and shared a practice sheet in the group.",
+        he: "המורה דחתה את המבחן בשבוע ושיתפה דף תרגול בקבוצה.",
+      },
+    },
+    {
+      id: "w3",
+      group: { en: "Art Club", he: "חוג אמנות" },
+      title: { en: "New session times from next month", he: "שעות חדשות לחוג מהחודש הבא" },
+      time: { en: "Thu", he: "יום ה׳" },
+      body: {
+        en: "Sessions move from 16:00 to 16:45 starting September. Same room, same instructor.",
+        he: "החוג יעבור מ-16:00 ל-16:45 החל מספטמבר. אותו חדר, אותה מדריכה.",
+      },
+    },
+  ],
+};
+
+export const groups = [
+  { id: "g1", name: { en: "Grade 4B", he: "כיתה ד2" }, members: 34, active: true },
+  { id: "g2", name: { en: "Hapoel U10 Parents", he: "הורים הפועל עד 10" }, members: 21, active: true },
+  { id: "g3", name: { en: "Class Moms 4B", he: "אמהות כיתה ד2" }, members: 28, active: true },
+  { id: "g4", name: { en: "Art Club", he: "חוג אמנות" }, members: 15, active: false },
+];
