@@ -175,6 +175,7 @@ async function connect() {
 
 console.log('[boot] ParentPulse worker starting');
 console.log(`[boot] auth dir: ${path.resolve(env.authDir)}`);
+startHealthServer();
 connect().catch((error) => {
   console.error('[boot] initial connect failed:', error?.stack || error);
   setTimeout(() => connect().catch(() => {}), 5000);
