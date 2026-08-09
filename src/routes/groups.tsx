@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Copy, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
