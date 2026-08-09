@@ -1,9 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { LogIn } from "lucide-react";
+import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { TaskCard } from "@/components/TaskCard";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { rowToTask, type ActionItemRow } from "@/lib/action-items";
 import { useLang } from "@/lib/lang";
-import { categoryFilters, tasks } from "@/lib/parentpulse-data";
+import { categoryFilters, tasks as demoTasks } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -20,6 +25,8 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Actionable tasks from your school and activity groups, in Hebrew and English.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ActionsScreen,
@@ -27,11 +34,85 @@ export const Route = createFileRoute("/")({
 
 function ActionsScreen() {
   const { t, lang } = useLang();
+  const { user, loading: authLoading } = useAuth();
   const [filter, setFilter] = useState<string>("all");
-  const [completed, setCompleted] = useState<string[]>([]);
+  const [rows, setRows] = useState<ActionItemRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  // Local completion state, used only for the signed-out demo feed.
+  const [demoDone, setDemoDone] = useState<string[]>([]);
 
-  const visible = tasks.filter((task) => filter === "all" || task.category === filter);
-  const pending = tasks.filter((task) => !completed.includes(task.id)).length;
+  // Load the signed-in user's action items and keep them live.
+  useEffect(() => {
+    if (!user) {
+      setRows([]);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+
+    supabase
+      .from("action_items")
+      .select("id, group_name, title, category, deadline, is_completed, created_at")
+      .order("deadline", { ascending: true, nullsFirst: false })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setLoading(false);
+        if (error) {
+          toast.error(t({ en: "Could not load tasks.", he: "לא ניתן לטעון משימות." }));
+          return;
+        }
+        setRows((data ?? []) as ActionItemRow[]);
+      });
+
+    const channel = supabase
+      .channel("action_items_feed")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "action_items", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          setRows((prev) => {
+            if (payload.eventType === "DELETE") {
+              return prev.filter((r) => r.id !== (payload.old as ActionItemRow).id);
+            }
+            const next = payload.new as ActionItemRow;
+            const exists = prev.some((r) => r.id === next.id);
+            return exists ? prev.map((r) => (r.id === next.id ? next : r)) : [...prev, next];
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, [user, t]);
+
+  async function toggleComplete(row: ActionItemRow) {
+    const nextValue = !row.is_completed;
+    // Optimistic update; the realtime event confirms it.
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, is_completed: nextValue } : r)),
+    );
+    const { error } = await supabase
+      .from("action_items")
+      .update({ is_completed: nextValue })
+      .eq("id", row.id);
+    if (error) {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, is_completed: row.is_completed } : r)),
+      );
+      toast.error(t({ en: "Could not update the task.", he: "לא ניתן לעדכן את המשימה." }));
+    }
+  }
+
+  const signedIn = !!user;
+  const liveTasks = rows.map(rowToTask);
+  const source = signedIn ? liveTasks : demoTasks;
+  const visible = source.filter((task) => filter === "all" || task.category === filter);
+  const pending = signedIn
+    ? rows.filter((r) => !r.is_completed).length
+    : demoTasks.filter((task) => !demoDone.includes(task.id)).length;
 
   const today = new Date().toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", {
     weekday: "long",
@@ -72,22 +153,64 @@ function ActionsScreen() {
         </div>
       </header>
 
+      {!authLoading && !signedIn && (
+        <div className="mt-4 px-5">
+          <Link
+            to="/auth"
+            className="flex items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/[0.05] p-4"
+          >
+            <LogIn className="h-5 w-5 shrink-0 text-primary" />
+            <span className="min-w-0 text-sm">
+              <span className="block font-bold text-foreground">
+                {t({ en: "You're viewing a demo feed", he: "אתם צופים בפיד לדוגמה" })}
+              </span>
+              <span className="block text-muted-foreground">
+                {t({ en: "Sign in to sync your real tasks.", he: "התחברו כדי לסנכרן משימות אמיתיות." })}
+              </span>
+            </span>
+          </Link>
+        </div>
+      )}
+
       <section className="mt-4 space-y-3 px-5">
-        {visible.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            done={completed.includes(task.id)}
-            onToggle={() =>
-              setCompleted((prev) =>
-                prev.includes(task.id) ? prev.filter((id) => id !== task.id) : [...prev, task.id],
-              )
-            }
-          />
-        ))}
-        {visible.length === 0 && (
+        {signedIn
+          ? rows
+              .map((row) => ({ row, task: rowToTask(row) }))
+              .filter(({ task }) => filter === "all" || task.category === filter)
+              .map(({ row, task }) => (
+                <TaskCard
+                  key={row.id}
+                  task={task}
+                  done={row.is_completed}
+                  onToggle={() => toggleComplete(row)}
+                />
+              ))
+          : visible.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                done={demoDone.includes(task.id)}
+                onToggle={() =>
+                  setDemoDone((prev) =>
+                    prev.includes(task.id)
+                      ? prev.filter((id) => id !== task.id)
+                      : [...prev, task.id],
+                  )
+                }
+              />
+            ))}
+
+        {signedIn && !loading && visible.length === 0 && (
           <p className="py-10 text-center text-sm text-muted-foreground">
-            {t({ en: "Nothing here right now.", he: "אין כאן משימות כרגע." })}
+            {t({
+              en: "No tasks yet — they'll appear here as your groups are parsed.",
+              he: "אין עדיין משימות — הן יופיעו כאן ברגע שהקבוצות ינותחו.",
+            })}
+          </p>
+        )}
+        {loading && (
+          <p className="py-10 text-center text-sm text-muted-foreground">
+            {t({ en: "Loading…", he: "טוען…" })}
           </p>
         )}
       </section>
