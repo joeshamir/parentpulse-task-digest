@@ -18,6 +18,6 @@
     }
   },
   "deploy": {
-    "startCommand": "HOST=0.0.0.0 PORT=$PORT node .output/server/index.mjs"
+    "startCommand": "npx sirv dist --single --host 0.0.0.0 --port $PORT"
   }
 }
