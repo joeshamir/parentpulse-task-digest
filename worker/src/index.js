@@ -129,6 +129,7 @@ async function connect() {
   socket.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       qrAttempt += 1;
+      markQr();
       console.log(`\n[whatsapp] ===== QR #${qrAttempt} (use the NEWEST one) =====`);
       console.log('[whatsapp] Easiest: open this link in your browser and scan the image:');
       console.log(
@@ -141,11 +142,13 @@ async function connect() {
     }
     if (connection === 'open') {
       reconnectDelay = 2000;
+      setState('connected');
       console.log('[whatsapp] connected');
     }
     if (connection === 'close') {
-      const status = lastDisconnect?.error?.output?.statusCode;
-      if (status === DisconnectReason.loggedOut) {
+      setState('disconnected');
+      const code = lastDisconnect?.error?.output?.statusCode;
+      if (code === DisconnectReason.loggedOut) {
         console.error('[whatsapp] logged out — delete the auth volume and re-pair');
         return;
       }
