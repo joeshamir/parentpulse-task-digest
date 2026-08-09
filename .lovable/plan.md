@@ -1,4 +1,10 @@
-# Rotate WORKER_SECRET
+# Rotate WORKER_SECRET (plus a build fix)
+
+## First: repair package.json
+
+The dev server is currently down. `package.json` has an `"engines"` block accidentally nested inside `"scripts"`, which makes the file invalid JSON, so `bun run dev` reports `Script not found "dev"`. Fix: move `"engines": { "node": ">=20.0.0" }` out to the top level, as a sibling of `"scripts"`. No other change.
+
+
 
 Your `USER_ID` is your account's permanent identifier and can't be regenerated — but the shared worker key can. `WORKER_SECRET` is the value your Node worker sends as `api_secret` to `/api/public/ingest-task`, and rotating it invalidates the old one.
 
