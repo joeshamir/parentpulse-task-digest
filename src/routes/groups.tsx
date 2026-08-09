@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Copy, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -216,43 +216,6 @@ function GroupsScreen() {
             </Link>
           )}
         </div>
-        {user && (
-          <div className="mt-2 rounded-2xl border border-border bg-card p-4">
-            <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              {t({ en: "Integration ID", he: "מזהה אינטגרציה" })}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {t({
-                en: "Paste this into your worker environment as USER_ID.",
-                he: "הדביקו את זה בסביבת ה-worker שלכם כ-USER_ID.",
-              })}
-            </p>
-            <div className="mt-2 flex items-center gap-2">
-              <code className="min-w-0 flex-1 truncate rounded-xl bg-muted px-3 py-2 text-xs font-mono text-card-foreground">
-                {user.id}
-              </code>
-              <button
-                onClick={async () => {
-                  try {
-                    await navigator.clipboard.writeText(user.id);
-                    toast.success(
-                      t({ en: "Integration ID copied", he: "מזהה האינטגרציה הועתק" }),
-                    );
-                  } catch {
-                    toast.error(
-                      t({ en: "Could not copy", he: "לא ניתן להעתיק" }),
-                    );
-                  }
-                }}
-                className="flex shrink-0 items-center gap-1 rounded-full border border-border px-3 py-2 text-xs font-bold transition-colors hover:bg-accent"
-                aria-label={t({ en: "Copy integration ID", he: "העתקת מזהה אינטגרציה" })}
-              >
-                <Copy className="h-4 w-4" />
-                {t({ en: "Copy", he: "העתקה" })}
-              </button>
-            </div>
-          </div>
-        )}
       </section>
 
       {/* Sticky save */}
