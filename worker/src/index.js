@@ -153,7 +153,7 @@ async function connect() {
         return;
       }
       if (shuttingDown) return;
-      console.warn(`[whatsapp] disconnected (${status}); reconnecting in ${reconnectDelay}ms`);
+      console.warn(`[whatsapp] disconnected (${code}); reconnecting in ${reconnectDelay}ms`);
       setTimeout(() => {
         connect().catch((error) => console.error('[whatsapp] reconnect failed:', error.message));
       }, reconnectDelay);
