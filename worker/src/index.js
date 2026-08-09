@@ -95,6 +95,7 @@ async function handleMessage(sock, message) {
 
 // --- Connection --------------------------------------------------------
 let reconnectDelay = 2000;
+let qrAttempt = 0;
 
 async function connect() {
   const authDir = path.resolve(env.authDir);
