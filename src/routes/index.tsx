@@ -21,10 +21,10 @@ export const Route = createFileRoute("/")({
         content:
           "See every school, sports and social task pulled out of your WhatsApp parent groups in one calm, bilingual Hebrew/English feed.",
       },
-      { property: "og:title", content: "ParentPulse — Today's Actions" },
+      { property: "og:title", content: "ParentPulse — Today's Actions from Your Parent Groups" },
       {
         property: "og:description",
-        content: "Actionable tasks from your school and activity groups, in Hebrew and English.",
+        content: "See every school, sports and social task pulled out of your WhatsApp parent groups in one calm, bilingual Hebrew/English feed.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

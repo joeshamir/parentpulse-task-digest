@@ -79,17 +79,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ParentPulse — Parent Group Tasks, Simplified" },
+      { title: "ParentPulse — Today's Actions from Your Parent Groups" },
       {
         name: "description",
         content:
-          "ParentPulse turns noisy Israeli school and activity WhatsApp groups into a calm bilingual dashboard of tasks and summaries.",
+          "See every school, sports and social task pulled out of your WhatsApp parent groups in one calm, bilingual Hebrew/English feed.",
       },
       { name: "author", content: "ParentPulse" },
-      { property: "og:title", content: "ParentPulse — Parent Group Tasks, Simplified" },
+      { property: "og:title", content: "ParentPulse — Today's Actions from Your Parent Groups" },
       {
         property: "og:description",
-        content: "Tasks and summaries from your parent groups, in Hebrew and English.",
+        content: "See every school, sports and social task pulled out of your WhatsApp parent groups in one calm, bilingual Hebrew/English feed.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -99,6 +99,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "ParentPulse" },
+      { name: "twitter:title", content: "ParentPulse — Today's Actions from Your Parent Groups" },
+      { name: "twitter:description", content: "See every school, sports and social task pulled out of your WhatsApp parent groups in one calm, bilingual Hebrew/English feed." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7f2ef5c05be40197bea4c27669771d87/id-preview-4d37cc87--b4eb221f-c61a-4755-a5a5-a10ffad8f097.lovable.app-1786291343723.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7f2ef5c05be40197bea4c27669771d87/id-preview-4d37cc87--b4eb221f-c61a-4755-a5a5-a10ffad8f097.lovable.app-1786291343723.png" },
     ],
     links: [
       {
