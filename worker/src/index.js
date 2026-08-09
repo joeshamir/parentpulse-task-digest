@@ -95,9 +95,13 @@ async function handleMessage(sock, message) {
   }
   if (!text) return;
 
+  markMessage();
   const task = extractTask(text, groupName);
   // text stays in memory only; it is never written to disk or a database
-  if (task) await sendTask(task);
+  if (task) {
+    await sendTask(task);
+    markTaskSent();
+  }
 }
 
 // --- Connection --------------------------------------------------------
