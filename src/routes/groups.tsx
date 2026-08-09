@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MessageCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
+import { Switch } from "@/components/ui/switch";
 import { useLang } from "@/lib/lang";
-import { groups } from "@/lib/parentpulse-data";
+import { groups, isRecommended } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/groups")({
@@ -12,20 +15,46 @@ export const Route = createFileRoute("/groups")({
       {
         name: "description",
         content:
-          "Manage which WhatsApp parent groups ParentPulse listens to, and control language and notification settings.",
+          "Connect the WhatsApp bridge and pick which parent groups ParentPulse listens to in under 10 seconds.",
       },
       { property: "og:title", content: "Groups & Settings — ParentPulse" },
       {
         property: "og:description",
-        content: "Manage connected parent groups and app preferences.",
+        content: "Pair WhatsApp, pick your class and activity groups, mute the noise.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: GroupsScreen,
 });
 
+function initials(name: string) {
+  return name
+    .replace(/[^\p{L}\p{N} ]/gu, " ")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("");
+}
+
 function GroupsScreen() {
   const { t, lang, toggle } = useLang();
+  const [query, setQuery] = useState("");
+  const [selected, setSelected] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(groups.map((g) => [g.id, isRecommended(g)])),
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return groups;
+    return groups.filter((g) =>
+      `${g.name.en} ${g.name.he}`.toLowerCase().includes(q),
+    );
+  }, [query]);
+
+  const selectedCount = Object.values(selected).filter(Boolean).length;
 
   return (
     <MobileShell>
@@ -35,43 +64,121 @@ function GroupsScreen() {
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t({
-            en: "Choose which groups ParentPulse listens to.",
-            he: "בחרו לאילו קבוצות ParentPulse מקשיב.",
+            en: "Pick your groups in 10 seconds. We never store chat logs.",
+            he: "בחרו קבוצות ב-10 שניות. אנחנו לא שומרים היסטוריית צ׳אט.",
           })}
         </p>
       </header>
 
-      <section className="mt-4 space-y-3 px-5">
-        {groups.map((group) => (
-          <div
-            key={group.id}
-            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4"
-          >
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <MessageCircle className="h-5 w-5" />
+      {/* Connection card */}
+      <section className="mt-4 px-5">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-success/15 text-success">
+              <ShieldCheck className="h-5 w-5" />
             </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[15px] font-bold text-card-foreground">
-                {t(group.name)}
-              </span>
-              <span className="block text-xs text-muted-foreground">
-                {group.members} {t({ en: "members", he: "חברים" })}
-              </span>
-            </span>
-            <span
-              className={cn(
-                "shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold",
-                group.active
-                  ? "bg-success/15 text-success"
-                  : "bg-muted text-muted-foreground",
-              )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[15px] font-bold text-card-foreground">
+                {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
+              </p>
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-success">
+                <span className="h-2 w-2 rounded-full bg-success" />
+                {t({ en: "Connected", he: "מחובר" })}
+              </p>
+            </div>
+            <button
+              onClick={() =>
+                toast(t({ en: "Generating new QR code…", he: "מייצרים קוד QR חדש…" }))
+              }
+              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-bold transition-colors hover:bg-accent"
             >
-              {group.active ? t({ en: "Active", he: "פעיל" }) : t({ en: "Paused", he: "מושהה" })}
-            </span>
+              <QrCode className="h-4 w-4" />
+              {t({ en: "Re-scan QR", he: "סריקת QR" })}
+            </button>
           </div>
-        ))}
+        </div>
       </section>
 
+      {/* Search */}
+      <section className="mt-5 px-5">
+        <div className="relative">
+          <Search className="pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground ltr:left-3 rtl:right-3" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t({ en: "Search groups…", he: "חיפוש קבוצות…" })}
+            aria-label={t({ en: "Search groups", he: "חיפוש קבוצות" })}
+            className="h-11 w-full rounded-2xl border border-border bg-card text-[15px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4"
+          />
+        </div>
+      </section>
+
+      {/* Group list */}
+      <section className="mt-4 px-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+            {t({ en: "Your groups", he: "הקבוצות שלך" })}
+          </h2>
+          <span className="text-xs font-bold text-primary">
+            {selectedCount} {t({ en: "selected", he: "נבחרו" })}
+          </span>
+        </div>
+
+        <ul className="mt-2 space-y-3">
+          {filtered.map((group) => {
+            const rec = isRecommended(group);
+            const on = !!selected[group.id];
+            return (
+              <li
+                key={group.id}
+                className={cn(
+                  "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-4 transition-colors",
+                  on ? "border-primary/45 bg-primary/[0.04]" : "border-border",
+                )}
+              >
+                <span
+                  className={cn(
+                    "grid h-11 w-11 shrink-0 place-items-center rounded-2xl text-sm font-bold",
+                    group.hue,
+                  )}
+                >
+                  {initials(t(group.name)) || <Users className="h-5 w-5" />}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] font-bold text-card-foreground">
+                    {t(group.name)}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">
+                      {group.members} {t({ en: "members", he: "חברים" })}
+                    </span>
+                    {rec && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-bold text-primary">
+                        <Sparkles className="h-3 w-3" />
+                        {t({ en: "Recommended", he: "מומלץ" })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Switch
+                  checked={on}
+                  onCheckedChange={(v) =>
+                    setSelected((prev) => ({ ...prev, [group.id]: v }))
+                  }
+                  aria-label={`${t({ en: "Listen to", he: "האזנה ל" })} ${t(group.name)}`}
+                />
+              </li>
+            );
+          })}
+          {filtered.length === 0 && (
+            <li className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              {t({ en: "No groups match your search.", he: "לא נמצאו קבוצות תואמות." })}
+            </li>
+          )}
+        </ul>
+      </section>
+
+      {/* Preferences */}
       <section className="mt-6 px-5">
         <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {t({ en: "Preferences", he: "העדפות" })}
@@ -82,12 +189,30 @@ function GroupsScreen() {
           </span>
           <button
             onClick={toggle}
-            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-bold text-foreground transition-colors hover:bg-accent"
+            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-bold transition-colors hover:bg-accent"
           >
             {lang === "en" ? "English" : "עברית"}
           </button>
         </div>
       </section>
+
+      {/* Sticky save */}
+      <div className="fixed inset-x-0 bottom-[68px] z-30 mx-auto w-full max-w-md border-t border-border bg-background/95 px-5 py-3 backdrop-blur">
+        <button
+          onClick={() =>
+            toast.success(
+              t({
+                en: `Saved ${selectedCount} groups`,
+                he: `נשמרו ${selectedCount} קבוצות`,
+              }),
+            )
+          }
+          className="h-12 w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground transition-opacity hover:opacity-90 active:opacity-80"
+        >
+          {t({ en: "Save Selected Groups", he: "שמירת הקבוצות שנבחרו" })}
+        </button>
+      </div>
+      <div className="h-16" />
     </MobileShell>
   );
 }
