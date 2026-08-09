@@ -14,7 +14,117 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      action_items: {
+        Row: {
+          category: string
+          created_at: string
+          deadline: string | null
+          group_name: string
+          id: string
+          is_completed: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          deadline?: string | null
+          group_name: string
+          id?: string
+          is_completed?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          deadline?: string | null
+          group_name?: string
+          id?: string
+          is_completed?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_summaries: {
+        Row: {
+          created_at: string
+          date: string
+          group_name: string
+          id: string
+          summary_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          group_name: string
+          id?: string
+          summary_text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          group_name?: string
+          id?: string
+          summary_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tracked_groups: {
+        Row: {
+          created_at: string
+          group_jid: string
+          group_name: string
+          id: string
+          is_tracked: boolean
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_jid: string
+          group_name: string
+          id?: string
+          is_tracked?: boolean
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_jid?: string
+          group_name?: string
+          id?: string
+          is_tracked?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_sessions: {
+        Row: {
+          id: string
+          qr_code_str: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          qr_code_str?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          qr_code_str?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
