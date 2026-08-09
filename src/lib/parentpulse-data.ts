@@ -143,9 +143,41 @@ export const digest: { today: DigestItem[]; week: DigestItem[] } = {
   ],
 };
 
-export const groups = [
-  { id: "g1", name: { en: "Grade 4B", he: "כיתה ד2" }, members: 34, active: true },
-  { id: "g2", name: { en: "Hapoel U10 Parents", he: "הורים הפועל עד 10" }, members: 21, active: true },
-  { id: "g3", name: { en: "Class Moms 4B", he: "אמהות כיתה ד2" }, members: 28, active: true },
-  { id: "g4", name: { en: "Art Club", he: "חוג אמנות" }, members: 15, active: false },
+export type Group = {
+  id: string;
+  name: { en: string; he: string };
+  members: number;
+  hue: string;
+};
+
+export const groups: Group[] = [
+  { id: "g1", name: { en: "Grade 4B — Parents", he: "כיתה ד2 — הורים" }, members: 34, hue: "bg-school/15 text-school" },
+  { id: "g2", name: { en: "Hapoel U10 Team", he: "קבוצת הפועל עד 10" }, members: 21, hue: "bg-sports/15 text-sports" },
+  { id: "g3", name: { en: "Class Moms 4B", he: "אמהות כיתה ד2" }, members: 28, hue: "bg-social/15 text-social" },
+  { id: "g4", name: { en: "Art Club / חוג אמנות", he: "חוג אמנות" }, members: 15, hue: "bg-social/15 text-social" },
+  { id: "g5", name: { en: "Parent Committee / וועד", he: "וועד הורים" }, members: 12, hue: "bg-school/15 text-school" },
+  { id: "g6", name: { en: "Coach Amit — Updates", he: "המאמן עמית — עדכונים" }, members: 24, hue: "bg-sports/15 text-sports" },
+  { id: "g7", name: { en: "School Admin / בית ספר", he: "הנהלת בית ספר" }, members: 210, hue: "bg-school/15 text-school" },
+  { id: "g8", name: { en: "Family Chat", he: "צ׳אט משפחתי" }, members: 9, hue: "bg-muted text-muted-foreground" },
+  { id: "g9", name: { en: "Neighborhood Ramat Aviv", he: "שכונת רמת אביב" }, members: 187, hue: "bg-muted text-muted-foreground" },
+  { id: "g10", name: { en: "Building Residents", he: "דיירי הבניין" }, members: 18, hue: "bg-muted text-muted-foreground" },
 ];
+
+export const recommendKeywords = [
+  "grade",
+  "school",
+  "class",
+  "coach",
+  "team",
+  "כיתה",
+  "בית ספר",
+  "חוג",
+  "וועד",
+  "ועד",
+  "מאמן",
+];
+
+export function isRecommended(group: Group) {
+  const haystack = `${group.name.en} ${group.name.he}`.toLowerCase();
+  return recommendKeywords.some((k) => haystack.includes(k.toLowerCase()));
+}
