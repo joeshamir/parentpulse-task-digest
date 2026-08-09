@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { LogIn } from "lucide-react";
 import { toast } from "sonner";
+import { InstallBanner } from "@/components/InstallBanner";
 import { MobileShell } from "@/components/MobileShell";
 import { TaskCard } from "@/components/TaskCard";
 import { useAuth } from "@/hooks/useAuth";
@@ -122,6 +123,7 @@ function ActionsScreen() {
 
   return (
     <MobileShell>
+      <InstallBanner />
       <header className="px-5 pt-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {today}
