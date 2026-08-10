@@ -67,8 +67,10 @@
   --color-school: var(--school);
   --color-sports: var(--sports);
   --color-social: var(--social);
-  --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --color-peach: var(--peach);
+  --color-peach-foreground: var(--peach-foreground);
+  --font-sans: "Plus Jakarta Sans", "Assistant", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Syne", "Assistant", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
