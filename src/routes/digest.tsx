@@ -32,27 +32,27 @@ function DigestScreen() {
 
   return (
     <MobileShell>
-      <header className="px-5 pt-4">
-        <h1 className="font-display text-2xl font-bold tracking-tight">
+      <header className="px-5 pt-1">
+        <h1 className="font-display text-[30px] font-extrabold leading-tight tracking-tight">
           {t({ en: "Digest", he: "תקציר" })}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm font-medium text-muted-foreground">
           {t({
             en: "Updates worth knowing — nothing to do.",
             he: "עדכונים שכדאי לדעת — בלי משימות.",
           })}
         </p>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-card/70 p-1 ring-1 ring-border">
           {(["today", "week"] as const).map((key) => (
             <button
               key={key}
               onClick={() => setRange(key)}
               className={cn(
-                "rounded-lg py-2 text-[13px] font-bold transition-colors",
+                "rounded-full py-2 text-[13px] font-bold transition-colors",
                 range === key
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground",
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {key === "today"
@@ -62,6 +62,7 @@ function DigestScreen() {
           ))}
         </div>
       </header>
+
 
       <section className="mt-4 space-y-3 px-5">
         {items.map((item) => (
