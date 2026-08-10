@@ -80,6 +80,9 @@ function AuthScreen() {
         return;
       }
       if (result.redirected) return;
+      // Popup flow: the session is set by the helper — confirm it before moving on.
+      const { data } = await supabase.auth.getSession();
+      if (data.session) navigate({ to: "/" });
     } catch (err) {
       toast.error(
         err instanceof Error && err.message
@@ -90,6 +93,7 @@ function AuthScreen() {
       setGoogleBusy(false);
     }
   }
+
 
 
   return (
