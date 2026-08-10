@@ -137,18 +137,19 @@ function ActionsScreen() {
 
         <div className="card-soft mt-4 flex items-center justify-between gap-4 rounded-3xl p-4">
           <div className="min-w-0">
-            <p className="font-display text-2xl font-extrabold leading-none">
-              {pending}
-            </p>
+            <p className="font-display text-3xl font-extrabold leading-none">{pending}</p>
             <p className="mt-1.5 text-[13px] font-semibold text-muted-foreground">
               {t({ en: "still open across your groups", he: "עדיין פתוחות בקבוצות שלך" })}
             </p>
           </div>
-          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-peach font-display text-lg font-extrabold text-peach-foreground">
-            {doneCount}
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-peach text-center text-peach-foreground">
+            <span className="font-display text-lg font-extrabold leading-none">{doneCount}</span>
+            <span className="mt-0.5 text-[10px] font-bold uppercase tracking-wide">
+              {t({ en: "done", he: "בוצעו" })}
+            </span>
           </span>
-
         </div>
+
 
         <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categoryFilters.map((item) => (
