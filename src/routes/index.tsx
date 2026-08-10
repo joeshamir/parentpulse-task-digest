@@ -174,7 +174,7 @@ function ActionsScreen() {
         <div className="mt-4 px-5">
           <Link
             to="/auth"
-            className="flex items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/[0.05] p-4"
+            className="flex items-center gap-3 rounded-3xl bg-primary/8 p-4 ring-1 ring-primary/20"
           >
             <LogIn className="h-5 w-5 shrink-0 text-primary" />
             <span className="min-w-0 text-sm">
