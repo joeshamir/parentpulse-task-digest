@@ -177,11 +177,11 @@ function GroupsScreen() {
 
   return (
     <MobileShell>
-      <header className="px-5 pt-4">
-        <h1 className="font-display text-2xl font-bold tracking-tight">
+      <header className="px-5 pt-1">
+        <h1 className="font-display text-[30px] font-extrabold leading-tight tracking-tight">
           {t({ en: "Groups & Settings", he: "קבוצות והגדרות" })}
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm font-medium text-muted-foreground">
           {t({
             en: "Pick your groups in 10 seconds. We never store chat logs.",
             he: "בחרו קבוצות ב-10 שניות. אנחנו לא שומרים היסטוריית צ׳אט.",
@@ -191,7 +191,7 @@ function GroupsScreen() {
 
       {/* Connection card */}
       <section className="mt-4 px-5">
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="card-soft rounded-3xl p-4">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-success/15 text-success">
               <ShieldCheck className="h-5 w-5" />
@@ -211,7 +211,7 @@ function GroupsScreen() {
               onClick={() =>
                 toast(t({ en: "Generating new QR code…", he: "מייצרים קוד QR חדש…" }))
               }
-              className="flex shrink-0 items-center gap-1.5 rounded-full border border-border px-3 py-2 text-xs font-bold transition-colors hover:bg-accent"
+              className="flex shrink-0 items-center gap-1.5 rounded-full bg-accent px-3 py-2 text-xs font-bold text-accent-foreground transition-colors hover:bg-muted"
             >
               <QrCode className="h-4 w-4" />
               {t({ en: "Re-scan QR", he: "סריקת QR" })}
@@ -220,7 +220,7 @@ function GroupsScreen() {
           <button
             onClick={sendTestTask}
             disabled={testing}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-accent disabled:opacity-60"
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-full bg-muted px-3 py-2.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-accent disabled:opacity-60"
           >
             <FlaskConical className="h-4 w-4" />
             {testing
@@ -239,7 +239,7 @@ function GroupsScreen() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t({ en: "Search groups…", he: "חיפוש קבוצות…" })}
             aria-label={t({ en: "Search groups", he: "חיפוש קבוצות" })}
-            className="h-11 w-full rounded-2xl border border-border bg-card text-[15px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4"
+            className="h-12 w-full rounded-full border border-border bg-card text-[15px] outline-none transition-colors placeholder:text-muted-foreground focus:border-primary ltr:pl-10 ltr:pr-4 rtl:pr-10 rtl:pl-4"
           />
         </div>
       </section>
@@ -264,8 +264,8 @@ function GroupsScreen() {
               <li
                 key={group.id}
                 className={cn(
-                  "grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border bg-card p-4 transition-colors",
-                  on ? "border-primary/45 bg-primary/[0.04]" : "border-border",
+                  "card-soft grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-3xl p-4 transition-colors",
+                  on && "bg-primary/[0.06] ring-1 ring-primary/25",
                 )}
               >
                 <span
@@ -305,7 +305,7 @@ function GroupsScreen() {
             );
           })}
           {filtered.length === 0 && (
-            <li className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            <li className="rounded-3xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
               {t({ en: "No groups match your search.", he: "לא נמצאו קבוצות תואמות." })}
             </li>
           )}
@@ -317,25 +317,25 @@ function GroupsScreen() {
         <h2 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {t({ en: "Preferences", he: "העדפות" })}
         </h2>
-        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4">
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 card-soft rounded-3xl p-4">
           <span className="min-w-0 text-[15px] font-bold text-card-foreground">
             {t({ en: "Language", he: "שפה" })}
           </span>
           <button
             onClick={toggle}
-            className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-bold transition-colors hover:bg-accent"
+            className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground transition-colors hover:bg-muted"
           >
             {lang === "en" ? "English" : "עברית"}
           </button>
         </div>
-        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4">
+        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 card-soft rounded-3xl p-4">
           <span className="min-w-0 truncate text-[15px] font-bold text-card-foreground">
             {user?.email ?? t({ en: "Not signed in", he: "לא מחוברים" })}
           </span>
           {user ? (
             <button
               onClick={() => signOut()}
-              className="shrink-0 rounded-full border border-border px-3 py-1.5 text-xs font-bold transition-colors hover:bg-accent"
+              className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-bold text-accent-foreground transition-colors hover:bg-muted"
             >
               {t({ en: "Sign out", he: "יציאה" })}
             </button>
@@ -351,18 +351,18 @@ function GroupsScreen() {
       </section>
 
       {/* Sticky save */}
-      <div className="fixed inset-x-0 bottom-[68px] z-30 mx-auto w-full max-w-md border-t border-border bg-background/95 px-5 py-3 backdrop-blur">
+      <div className="fixed inset-x-0 bottom-[104px] z-30 mx-auto w-full max-w-md px-5">
         <button
           onClick={saveGroups}
           disabled={saving || (Boolean(user) && liveGroups.length === 0)}
-          className="h-12 w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
+          className="h-12 w-full rounded-full bg-primary text-[15px] font-bold text-primary-foreground shadow-[0_14px_30px_-12px_color-mix(in_oklab,var(--color-primary)_75%,transparent)] transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
         >
           {saving
             ? t({ en: "Saving…", he: "שומר…" })
             : t({ en: "Save Selected Groups", he: "שמירת הקבוצות שנבחרו" })}
         </button>
       </div>
-      <div className="h-16" />
+      <div className="h-20" />
     </MobileShell>
   );
 }

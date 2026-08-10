@@ -114,6 +114,9 @@ function ActionsScreen() {
   const pending = signedIn
     ? rows.filter((r) => !r.is_completed).length
     : demoTasks.filter((task) => !demoDone.includes(task.id)).length;
+  const doneCount = source.length - pending;
+
+
 
   const today = new Date().toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", {
     weekday: "long",
@@ -124,18 +127,29 @@ function ActionsScreen() {
   return (
     <MobileShell>
       <InstallBanner />
-      <header className="px-5 pt-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+      <header className="px-5 pt-1">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground">
           {today}
         </p>
-        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-          <h1 className="truncate font-display text-2xl font-bold tracking-tight">
-            {t({ en: "Actions", he: "משימות" })}
-          </h1>
-          <span className="shrink-0 rounded-full bg-warning/18 px-3 py-1 text-xs font-bold text-warning">
-            {pending} {t({ en: "Actions Pending", he: "משימות פתוחות" })}
+        <h1 className="mt-1.5 font-display text-[30px] font-extrabold leading-tight tracking-tight">
+          {t({ en: "Today's actions", he: "המשימות של היום" })}
+        </h1>
+
+        <div className="card-soft mt-4 flex items-center justify-between gap-4 rounded-3xl p-4">
+          <div className="min-w-0">
+            <p className="font-display text-3xl font-extrabold leading-none">{pending}</p>
+            <p className="mt-1.5 text-[13px] font-semibold text-muted-foreground">
+              {t({ en: "still open across your groups", he: "עדיין פתוחות בקבוצות שלך" })}
+            </p>
+          </div>
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-peach text-center text-peach-foreground">
+            <span className="font-display text-lg font-extrabold leading-none">{doneCount}</span>
+            <span className="mt-0.5 text-[10px] font-bold uppercase tracking-wide">
+              {t({ en: "done", he: "בוצעו" })}
+            </span>
           </span>
         </div>
+
 
         <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categoryFilters.map((item) => (
@@ -143,10 +157,10 @@ function ActionsScreen() {
               key={item.key}
               onClick={() => setFilter(item.key)}
               className={cn(
-                "shrink-0 rounded-full border px-4 py-1.5 text-[13px] font-semibold transition-colors",
+                "shrink-0 rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
                 filter === item.key
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-background text-muted-foreground hover:bg-accent",
+                  ? "bg-foreground text-background"
+                  : "bg-card/70 text-muted-foreground ring-1 ring-border hover:text-foreground",
               )}
             >
               {t(item.label)}
@@ -155,11 +169,12 @@ function ActionsScreen() {
         </div>
       </header>
 
+
       {!authLoading && !signedIn && (
         <div className="mt-4 px-5">
           <Link
             to="/auth"
-            className="flex items-center gap-3 rounded-2xl border border-dashed border-primary/40 bg-primary/[0.05] p-4"
+            className="flex items-center gap-3 rounded-3xl bg-primary/8 p-4 ring-1 ring-primary/20"
           >
             <LogIn className="h-5 w-5 shrink-0 text-primary" />
             <span className="min-w-0 text-sm">
