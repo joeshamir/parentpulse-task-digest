@@ -33,6 +33,8 @@ function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
 
   useEffect(() => {
     if (session) navigate({ to: "/" });
@@ -63,17 +65,42 @@ function AuthScreen() {
     }
   }
 
-  async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(t({ en: "Google sign-in failed.", he: "ההתחברות עם גוגל נכשלה." }));
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/" });
+  function redirectSignIn() {
+    const origin = window.location.origin;
+    window.location.href = `/~oauth/initiate?provider=google&redirect_uri=${encodeURIComponent(
+      origin,
+    )}`;
   }
+
+  async function google() {
+    if (googleBusy) return;
+    setGoogleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        const message = result.error.message ?? "";
+        if (/popup|blocked|window/i.test(message)) {
+          redirectSignIn();
+          return;
+        }
+        toast.error(
+          message || t({ en: "Google sign-in failed.", he: "ההתחברות עם גוגל נכשלה." }),
+        );
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/" });
+    } catch (err) {
+      // Popup blocked or the sign-in window was closed: fall back to a full-page redirect.
+      redirectSignIn();
+      void err;
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
 
   return (
     <div dir={dir} className="min-h-screen bg-surface text-foreground">
@@ -124,10 +151,14 @@ function AuthScreen() {
 
         <button
           onClick={google}
-          className="h-12 w-full rounded-2xl border border-border bg-card text-[15px] font-bold transition-colors hover:bg-accent"
+          disabled={googleBusy}
+          className="h-12 w-full rounded-2xl border border-border bg-card text-[15px] font-bold transition-colors hover:bg-accent disabled:opacity-60"
         >
-          {t({ en: "Continue with Google", he: "המשך עם גוגל" })}
+          {googleBusy
+            ? t({ en: "Opening Google…", he: "פותח את גוגל…" })
+            : t({ en: "Continue with Google", he: "המשך עם גוגל" })}
         </button>
+
 
         <button
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
