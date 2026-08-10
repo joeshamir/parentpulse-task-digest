@@ -7,8 +7,8 @@ const groupSchema = z.object({
 });
 
 const payloadSchema = z.object({
-  api_secret: z.string().min(1),
-  user_id: z.string().uuid(),
+  // Per-user token; the user id is derived from it server-side.
+  worker_token: z.string().min(1),
   groups: z.array(groupSchema).max(500).optional(),
   state: z.enum(['pending_qr', 'connected', 'disconnected']).optional(),
 });
@@ -26,13 +26,6 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-
 export const Route = createFileRoute('/api/public/worker-groups')({
   server: {
     handlers: {
@@ -43,12 +36,13 @@ export const Route = createFileRoute('/api/public/worker-groups')({
 
         const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
         if (!parsed.success) return json({ success: false, error: 'invalid payload' }, 400);
-        if (!safeEqual(parsed.data.api_secret, workerSecret)) {
-          return json({ success: false, error: 'unauthorized' }, 401);
-        }
+
+        const { verifyWorkerToken } = await import('@/lib/worker-auth.server');
+        const userId = verifyWorkerToken(parsed.data.worker_token, workerSecret);
+        if (!userId) return json({ success: false, error: 'unauthorized' }, 401);
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-        const { user_id: userId, groups = [], state } = parsed.data;
+        const { groups = [], state } = parsed.data;
         if (state) {
           const { error: sessionError } = await supabaseAdmin
             .from('whatsapp_sessions')

@@ -4,9 +4,10 @@ import { z } from 'zod';
 const CATEGORIES = ['School', 'Sports', 'Social', 'Other'] as const;
 
 const payloadSchema = z.object({
-  api_secret: z.string().min(1),
+  // Per-user token: binds the worker secret to one account. The user id is
+  // derived from the token server-side, never taken from the request body.
+  worker_token: z.string().min(1),
   group_name: z.string().min(1).max(200),
-  user_id: z.string().uuid(),
   title: z.string().min(1).max(500),
   category: z.string().max(50).optional().nullable(),
   deadline: z
@@ -28,13 +29,6 @@ function json(body: unknown, status: number) {
     status,
     headers: { 'content-type': 'application/json', ...CORS_HEADERS },
   });
-}
-
-function safeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
 }
 
 export const Route = createFileRoute('/api/public/ingest-task')({
@@ -64,7 +58,9 @@ export const Route = createFileRoute('/api/public/ingest-task')({
         }
 
         const data = parsed.data;
-        if (!safeEqual(data.api_secret, workerSecret)) {
+        const { verifyWorkerToken } = await import('@/lib/worker-auth.server');
+        const userId = verifyWorkerToken(data.worker_token, workerSecret);
+        if (!userId) {
           return json({ success: false, error: 'unauthorized' }, 401);
         }
 
@@ -78,7 +74,7 @@ export const Route = createFileRoute('/api/public/ingest-task')({
         const { data: inserted, error } = await supabaseAdmin
           .from('action_items')
           .insert({
-            user_id: data.user_id,
+            user_id: userId,
             group_name: data.group_name,
             title: data.title,
             category,
