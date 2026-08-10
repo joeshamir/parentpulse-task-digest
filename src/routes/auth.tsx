@@ -151,10 +151,14 @@ function AuthScreen() {
 
         <button
           onClick={google}
-          className="h-12 w-full rounded-2xl border border-border bg-card text-[15px] font-bold transition-colors hover:bg-accent"
+          disabled={googleBusy}
+          className="h-12 w-full rounded-2xl border border-border bg-card text-[15px] font-bold transition-colors hover:bg-accent disabled:opacity-60"
         >
-          {t({ en: "Continue with Google", he: "המשך עם גוגל" })}
+          {googleBusy
+            ? t({ en: "Opening Google…", he: "פותח את גוגל…" })
+            : t({ en: "Continue with Google", he: "המשך עם גוגל" })}
         </button>
+
 
         <button
           onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
