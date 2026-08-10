@@ -78,30 +78,31 @@ function SummaryCard({ item }: { item: DigestItem }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card">
+    <article className="card-soft overflow-hidden rounded-3xl">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4 text-start"
       >
         <span className="min-w-0">
-          <span className="block text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+          <span className="inline-block rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-accent-foreground">
             {t(item.group)} · {t(item.time)}
           </span>
-          <span className="mt-1 block text-[15px] font-bold leading-snug text-card-foreground">
+          <span className="mt-2 block font-display text-[16px] font-bold leading-snug text-card-foreground">
             {t(item.title)}
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
+            "h-8 w-8 shrink-0 rounded-full bg-muted p-2 text-muted-foreground transition-transform",
             open && "rotate-180",
           )}
         />
       </button>
       {open && (
-        <p className="border-t border-border px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+        <p className="border-t border-border px-4 py-3 text-sm font-medium leading-relaxed text-muted-foreground">
           {t(item.body)}
+
         </p>
       )}
     </article>
