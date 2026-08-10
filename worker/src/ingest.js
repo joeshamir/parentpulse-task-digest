@@ -1,4 +1,14 @@
+import { createHmac } from 'node:crypto';
+
 import { env } from './env.js';
+
+// Per-user token: HMAC of the user id with the shared worker secret. The server
+// derives the target account from this token, so a token only works for USER_ID.
+function workerToken() {
+  const mac = createHmac('sha256', env.workerSecret).update(env.userId).digest('hex');
+  return `${env.userId}.${mac}`;
+}
+
 
 const CATEGORY_RULES = [
   { category: 'School', words: ['school', 'class', 'grade', 'teacher', 'homework', 'בית ספר', 'כיתה', 'מורה', 'שיעורי בית', 'וועד'] },
@@ -18,8 +28,7 @@ export function guessCategory(text) {
 // Retries transient failures; never throws (a failed send must not kill the worker).
 export async function sendTask({ groupName, title, category, deadline }) {
   const body = {
-    api_secret: env.workerSecret,
-    user_id: env.userId,
+    worker_token: workerToken(),
     group_name: groupName.slice(0, 200),
     title: title.slice(0, 500),
     category: category || guessCategory(title),
@@ -61,8 +70,7 @@ export async function syncGroups(groups = [], state) {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        api_secret: env.workerSecret,
-        user_id: env.userId,
+        worker_token: workerToken(),
         groups,
         state,
       }),
