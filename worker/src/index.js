@@ -22,6 +22,7 @@ import {
   markActionable,
   markIngestFailure,
   markSkipped,
+  markGroupSync,
 } from './health.js';
 
 const logger = pino({ level: 'warn' });
@@ -58,6 +59,8 @@ setInterval(() => {}, 1 << 30);
 // --- Message handling --------------------------------------------------
 let selectedGroupJids = new Set();
 let hasCloudSelections = false;
+let lastSelectionRefreshAt = 0;
+let selectionRefreshPromise;
 
 function isTracked(groupName, jid) {
   if (hasCloudSelections) return selectedGroupJids.has(jid);
@@ -65,6 +68,25 @@ function isTracked(groupName, jid) {
   return env.trackedGroups.some((name) =>
     groupName.toLowerCase().includes(name.toLowerCase()),
   );
+}
+
+async function refreshSelections() {
+  const now = Date.now();
+  if (selectionRefreshPromise) return selectionRefreshPromise;
+  if (now - lastSelectionRefreshAt < 5000) return;
+  lastSelectionRefreshAt = now;
+  selectionRefreshPromise = syncGroups([], 'connected')
+    .then((rows) => {
+      if (!rows) return;
+      const selected = rows.filter((group) => group.is_tracked);
+      selectedGroupJids = new Set(selected.map((group) => group.group_jid));
+      hasCloudSelections = rows.length > 0;
+      markGroupSync(selected.length);
+    })
+    .finally(() => {
+      selectionRefreshPromise = undefined;
+    });
+  return selectionRefreshPromise;
 }
 
 function textOf(message) {
@@ -91,6 +113,8 @@ async function handleMessage(sock, message) {
     return;
   }
 
+  await refreshSelections();
+
   let groupName = jid;
   try {
     const metadata = await sock.groupMetadata(jid);
@@ -100,6 +124,7 @@ async function handleMessage(sock, message) {
   }
   if (!isTracked(groupName, jid)) {
     markSkipped('group-not-tracked');
+    console.log(`[filter] ignored unselected group: ${groupName}`);
     return;
   }
 
@@ -139,6 +164,8 @@ async function refreshGroups(sock, state = 'connected') {
     const selected = rows.filter((group) => group.is_tracked);
     selectedGroupJids = new Set(selected.map((group) => group.group_jid));
     hasCloudSelections = rows.length > 0;
+    lastSelectionRefreshAt = Date.now();
+    markGroupSync(selected.length);
     console.log(`[groups] synced ${available.length} groups; ${selected.length} selected`);
   } catch (error) {
     console.error('[groups] refresh failed:', error.message);
@@ -221,7 +248,7 @@ async function connect() {
 
   setInterval(() => {
     if (socket) void refreshGroups(socket);
-  }, 60_000).unref();
+  }, 15_000).unref();
 }
 
 console.log('[boot] ParentPulse worker starting');

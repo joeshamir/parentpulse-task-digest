@@ -142,6 +142,9 @@ function GroupsScreen() {
       toast.error(t({ en: "Could not save groups.", he: "לא ניתן לשמור קבוצות." }));
       return;
     }
+    // The external worker refreshes this list frequently and applies changes
+    // by stable WhatsApp group ID. This event lets other open app tabs update.
+    window.dispatchEvent(new CustomEvent("parentpulse:groups-saved"));
     toast.success(t({ en: `Saved ${selectedCount} groups`, he: `נשמרו ${selectedCount} קבוצות` }));
   }
 

@@ -34,7 +34,7 @@ export async function sendTask({ groupName, title, category, deadline }) {
         body: JSON.stringify(body),
       });
       if (res.ok) {
-        console.log(`[ingest] sent: ${body.title}`);
+        console.log(`[ingest] task sent for group: ${body.group_name}`);
         return true;
       }
       if (res.status === 401) {
