@@ -6,7 +6,7 @@ import { InstallBanner } from "@/components/InstallBanner";
 import { MobileShell } from "@/components/MobileShell";
 import { TaskCard } from "@/components/TaskCard";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/browser-client";
 import { rowToTask, type ActionItemRow } from "@/lib/action-items";
 import { useLang } from "@/lib/lang";
 import { categoryFilters, tasks as demoTasks } from "@/lib/parentpulse-data";

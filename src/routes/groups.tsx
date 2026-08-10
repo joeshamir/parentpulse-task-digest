@@ -6,7 +6,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/browser-client";
 import { groups as demoGroups, isRecommended, recommendKeywords } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
 
