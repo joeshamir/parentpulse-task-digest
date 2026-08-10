@@ -135,10 +135,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const url =
+    (import.meta.env['VITE_SUPABASE_URL'] as string | undefined) ||
+    (typeof process !== 'undefined' ? process.env?.['SUPABASE_URL'] : undefined);
+  const key =
+    (import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'] as string | undefined) ||
+    (typeof process !== 'undefined' ? process.env?.['SUPABASE_PUBLISHABLE_KEY'] : undefined);
+  const backendScript =
+    url && key
+      ? `window.__PARENTPULSE_BACKEND__=${JSON.stringify({ url, key }).replace(/</g, "\\u003c")};`
+      : null;
+
   return (
     <html lang="en">
       <head>
         <HeadContent />
+        {backendScript ? (
+          <script dangerouslySetInnerHTML={{ __html: backendScript }} />
+        ) : null}
       </head>
       <body>
         {children}
@@ -148,6 +162,7 @@ function RootShell({ children }: { children: ReactNode }) {
     </html>
   );
 }
+
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
