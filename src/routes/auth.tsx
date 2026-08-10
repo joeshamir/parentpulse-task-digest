@@ -70,7 +70,7 @@ function AuthScreen() {
     setGoogleBusy(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: `${window.location.origin}/oauth-return`,
       });
       if (result.error) {
         const message = result.error.message ?? "";
@@ -80,9 +80,17 @@ function AuthScreen() {
         return;
       }
       if (result.redirected) return;
-      // Popup flow: the session is set by the helper — confirm it before moving on.
-      const { data } = await supabase.auth.getSession();
-      if (data.session) navigate({ to: "/" });
+      // Popup flow: the helper stores the returned tokens. The shared auth
+      // provider verifies the identity and drives navigation from that event.
+      const { data, error } = await supabase.auth.getUser();
+      if (error || !data.user) {
+        toast.error(
+          t({
+            en: "Google approved sign-in, but the session did not finish. Please try again.",
+            he: "גוגל אישרה את ההתחברות, אך החיבור לא הושלם. נסו שוב.",
+          }),
+        );
+      }
     } catch (err) {
       toast.error(
         err instanceof Error && err.message

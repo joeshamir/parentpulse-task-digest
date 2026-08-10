@@ -13,6 +13,8 @@ export const status = {
   messagesReceived: 0,
   actionableMessages: 0,
   ingestFailures: 0,
+  selectedGroups: 0,
+  lastGroupSyncAt: null,
   skipped: {},
 };
 
@@ -46,6 +48,11 @@ export function markSkipped(reason) {
 export function markTaskSent() {
   status.tasksSent += 1;
   status.lastTaskAt = new Date().toISOString();
+}
+
+export function markGroupSync(selectedGroups) {
+  status.selectedGroups = selectedGroups;
+  status.lastGroupSyncAt = new Date().toISOString();
 }
 
 export function startHealthServer() {
