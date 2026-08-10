@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
 
-export const Route = createFileRoute("/auth/callback")({
+export const Route = createFileRoute("/oauth-return")({
   ssr: false,
   head: () => ({
     meta: [
@@ -17,10 +17,10 @@ export const Route = createFileRoute("/auth/callback")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: AuthCallback,
+  component: OAuthReturn,
 });
 
-function AuthCallback() {
+function OAuthReturn() {
   const { t, dir } = useLang();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
