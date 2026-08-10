@@ -2,24 +2,27 @@
 
 ## Confirmed diagnosis
 
-- Google authentication is enabled and the hosted backend is healthy.
-- Recent Google attempts complete successfully at the auth provider and return HTTP 200 tokens.
-- The app currently adds a custom `window.location.href = /~oauth/initiate...` fallback around Lovable’s managed sign-in helper. That fallback bypasses the helper’s normal popup response and browser-session handoff, matching the observed behavior: Google accepts the login, but ParentPulse remains signed out.
+- Google authentication succeeds and returns an authenticated session.
+- The published flow returns to the site root with `access_token` and `refresh_token` in the URL fragment.
+- The app currently sends Google back to `/`, while its dedicated `/oauth-return` route only checks for an already-stored session; it does not consume returned credentials.
+- The managed auth wrapper can store tokens for its popup flow, but its full-page redirect exits before that wrapper code runs.
 
-## Implementation
+## Plan
 
-1. Simplify the Google button to call the managed `lovable.auth.signInWithOAuth("google")` flow directly during the click gesture, with the public app origin as its callback.
-2. Remove the custom `/~oauth/initiate` fallback and avoid navigating home until a real authenticated session has been confirmed.
-3. Make the auth screen react to the confirmed auth-state event, then redirect to Actions; show a clear retryable error if Google closes or rejects the flow.
-4. Preserve email/password authentication unchanged.
+1. Change Google’s public return URL to `/oauth-return` so all full-page responses land on the dedicated callback screen.
+2. On that route, detect the returned credential fragment, immediately remove it from the visible URL/history, and pass the credentials to the existing auth client to establish the browser session.
+3. Revalidate the signed-in user, let the shared auth provider update, then replace the callback route with the ParentPulse home screen.
+4. Add clear failure handling for missing, malformed, or rejected callback credentials instead of polling for a session that was never stored.
+5. Preserve the existing managed popup behavior in the editor and avoid exposing credentials in logs, UI, query parameters, or application state.
+6. Verify both flows: published-style callback credentials produce a persistent session with a clean URL, and the editor’s Google button still launches the managed provider correctly.
 
-## Verification
+## Security follow-up
 
-1. Test from the live-style browser flow: click Google, complete account selection, and confirm ParentPulse leaves `/auth` for `/`.
-2. Verify the browser has a valid signed-in user after return and that refreshing keeps the session.
-3. Check for popup, callback, console, and network errors, then verify sign-out/sign-in works a second time.
-4. Confirm the auth provider remains configured for Google before publishing the frontend update.
+The URL pasted into chat contains a live access token and refresh token. After the corrected flow is deployed, sign out and sign back in to invalidate/replace that exposed session. Do not share another callback URL containing `access_token` or `refresh_token`.
 
-## Expected result
+## Technical details
 
-Google sign-in completes through the supported managed flow, ParentPulse recognizes the returned session, redirects to Actions, and remains signed in after refresh.
+- Keep `/oauth-return` public and client-rendered.
+- Use `supabase.auth.setSession(...)` only on the callback route after validating both required token fields.
+- Call `history.replaceState` before network validation so credentials are removed even if session establishment fails.
+- Do not alter the generated backend client or implement a raw Google OAuth flow.
