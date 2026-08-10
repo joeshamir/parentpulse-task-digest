@@ -63,17 +63,42 @@ function AuthScreen() {
     }
   }
 
-  async function google() {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      toast.error(t({ en: "Google sign-in failed.", he: "ההתחברות עם גוגל נכשלה." }));
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/" });
+  function redirectSignIn() {
+    const origin = window.location.origin;
+    window.location.href = `/~oauth/initiate?provider=google&redirect_uri=${encodeURIComponent(
+      origin,
+    )}`;
   }
+
+  async function google() {
+    if (googleBusy) return;
+    setGoogleBusy(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        const message = result.error.message ?? "";
+        if (/popup|blocked|window/i.test(message)) {
+          redirectSignIn();
+          return;
+        }
+        toast.error(
+          message || t({ en: "Google sign-in failed.", he: "ההתחברות עם גוגל נכשלה." }),
+        );
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/" });
+    } catch (err) {
+      // Popup blocked or the sign-in window was closed: fall back to a full-page redirect.
+      redirectSignIn();
+      void err;
+    } finally {
+      setGoogleBusy(false);
+    }
+  }
+
 
   return (
     <div dir={dir} className="min-h-screen bg-surface text-foreground">
