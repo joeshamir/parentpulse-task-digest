@@ -23,6 +23,7 @@ import {
   markIngestFailure,
   markSkipped,
   markGroupSync,
+  logDecision,
 } from './health.js';
 
 const logger = pino({ level: 'warn' });
@@ -81,7 +82,7 @@ async function refreshSelections() {
       const selected = rows.filter((group) => group.is_tracked);
       selectedGroupJids = new Set(selected.map((group) => group.group_jid));
       hasCloudSelections = rows.length > 0;
-      markGroupSync(selected.length);
+      markGroupSync(selected.length, selected.map((group) => group.group_name));
     })
     .finally(() => {
       selectionRefreshPromise = undefined;
@@ -124,6 +125,7 @@ async function handleMessage(sock, message) {
   }
   if (!isTracked(groupName, jid)) {
     markSkipped('group-not-tracked');
+    logDecision('group-not-tracked', groupName);
     console.log(`[filter] ignored unselected group: ${groupName}`);
     return;
   }
@@ -136,7 +138,9 @@ async function handleMessage(sock, message) {
     text = await transcribeVoice(buffer);
   }
   if (!text) {
-    markSkipped(audio ? 'transcription-unavailable' : 'no-text');
+    const reason = audio ? 'transcription-unavailable' : 'no-text';
+    markSkipped(reason);
+    logDecision(reason, groupName);
     return;
   }
 
@@ -145,10 +149,16 @@ async function handleMessage(sock, message) {
   if (task) {
     markActionable();
     const sent = await sendTask(task);
-    if (sent) markTaskSent();
-    else markIngestFailure();
+    if (sent) {
+      markTaskSent();
+      logDecision('task-sent', groupName);
+    } else {
+      markIngestFailure();
+      logDecision('ingest-failed', groupName);
+    }
   } else {
     markSkipped('not-actionable');
+    logDecision('not-actionable', groupName);
   }
 }
 
@@ -165,7 +175,7 @@ async function refreshGroups(sock, state = 'connected') {
     selectedGroupJids = new Set(selected.map((group) => group.group_jid));
     hasCloudSelections = rows.length > 0;
     lastSelectionRefreshAt = Date.now();
-    markGroupSync(selected.length);
+    markGroupSync(selected.length, selected.map((group) => group.group_name));
     console.log(`[groups] synced ${available.length} groups; ${selected.length} selected`);
   } catch (error) {
     console.error('[groups] refresh failed:', error.message);
@@ -233,7 +243,8 @@ async function connect() {
   });
 
   socket.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type !== 'notify') {
+    // 'append' carries messages that land while the socket is (re)syncing.
+    if (type !== 'notify' && type !== 'append') {
       markSkipped(`event-${type || 'unknown'}`);
       return;
     }
@@ -248,7 +259,7 @@ async function connect() {
 
   setInterval(() => {
     if (socket) void refreshGroups(socket);
-  }, 15_000).unref();
+  }, 60_000).unref();
 }
 
 console.log('[boot] ParentPulse worker starting');
