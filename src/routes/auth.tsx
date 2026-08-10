@@ -70,7 +70,7 @@ function AuthScreen() {
     setGoogleBusy(true);
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/oauth-return`,
+        redirect_uri: window.location.origin,
       });
       if (result.error) {
         const message = result.error.message ?? "";

@@ -35,7 +35,7 @@ function OAuthReturn() {
 
     let cancelled = false;
     const finish = async () => {
-      for (let attempt = 0; attempt < 12; attempt += 1) {
+      for (let attempt = 0; attempt < 4; attempt += 1) {
         const { data, error } = await supabase.auth.getUser();
         if (cancelled) return;
         if (!error && data.user) {
@@ -44,7 +44,12 @@ function OAuthReturn() {
         }
         await new Promise((resolve) => window.setTimeout(resolve, 500));
       }
-      if (!cancelled) setFailed(true);
+      if (!cancelled) {
+        setFailed(true);
+        window.setTimeout(() => {
+          if (!cancelled) void navigate({ to: "/auth", replace: true });
+        }, 1500);
+      }
     };
     void finish();
     return () => {
