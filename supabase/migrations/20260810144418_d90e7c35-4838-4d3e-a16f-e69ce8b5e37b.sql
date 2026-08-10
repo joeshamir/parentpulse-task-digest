@@ -1,0 +1,1 @@
+ALTER TABLE public.whatsapp_sessions ADD CONSTRAINT whatsapp_sessions_user_id_key UNIQUE (user_id);

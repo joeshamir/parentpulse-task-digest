@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
-import { groups, isRecommended } from "@/lib/parentpulse-data";
+import { supabase } from "@/integrations/supabase/client";
+import { groups as demoGroups, isRecommended, recommendKeywords } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/groups")({
@@ -45,8 +46,72 @@ function GroupsScreen() {
   const { user, signOut } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(groups.map((g) => [g.id, isRecommended(g)])),
+    Object.fromEntries(demoGroups.map((g) => [g.id, isRecommended(g)])),
   );
+  const [liveGroups, setLiveGroups] = useState<
+    Array<{ id: string; jid: string; name: string; members: number; hue: string }>
+  >([]);
+  const [connection, setConnection] = useState("pending_qr");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    Promise.all([
+      supabase
+        .from("tracked_groups")
+        .select("id, group_jid, group_name, is_tracked")
+        .order("group_name"),
+      supabase
+        .from("whatsapp_sessions")
+        .select("status")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]).then(([groupsResult, sessionResult]) => {
+      if (cancelled) return;
+      if (groupsResult.error) {
+        toast.error(t({ en: "Could not load groups.", he: "לא ניתן לטעון קבוצות." }));
+      } else {
+        const rows = groupsResult.data ?? [];
+        setLiveGroups(
+          rows.map((row) => ({
+            id: row.id,
+            jid: row.group_jid,
+            name: row.group_name,
+            members: 0,
+            hue: "bg-school/15 text-school",
+          })),
+        );
+        setSelected(Object.fromEntries(rows.map((row) => [row.id, row.is_tracked])));
+      }
+      if (sessionResult.data?.status) setConnection(sessionResult.data.status);
+    });
+
+    const channel = supabase
+      .channel("parentpulse_groups_status")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "tracked_groups", filter: `user_id=eq.${user.id}` },
+        () => window.location.reload(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
+        (payload) => setConnection((payload.new as { status?: string }).status ?? "pending_qr"),
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [user, t]);
+
+  const groups = user
+    ? liveGroups.map((group) => ({
+        ...group,
+        name: { en: group.name, he: group.name },
+      }))
+    : demoGroups;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -54,9 +119,31 @@ function GroupsScreen() {
     return groups.filter((g) =>
       `${g.name.en} ${g.name.he}`.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [groups, query]);
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
+  const connected = connection === "connected";
+
+  async function saveGroups() {
+    if (!user) {
+      toast(t({ en: "Sign in to save your groups.", he: "יש להתחבר כדי לשמור קבוצות." }));
+      return;
+    }
+    setSaving(true);
+    const updates = liveGroups.map((group) =>
+      supabase
+        .from("tracked_groups")
+        .update({ is_tracked: !!selected[group.id] })
+        .eq("id", group.id),
+    );
+    const results = await Promise.all(updates);
+    setSaving(false);
+    if (results.some((result) => result.error)) {
+      toast.error(t({ en: "Could not save groups.", he: "לא ניתן לשמור קבוצות." }));
+      return;
+    }
+    toast.success(t({ en: `Saved ${selectedCount} groups`, he: `נשמרו ${selectedCount} קבוצות` }));
+  }
 
   return (
     <MobileShell>
@@ -83,9 +170,11 @@ function GroupsScreen() {
               <p className="truncate text-[15px] font-bold text-card-foreground">
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
-              <p className="flex items-center gap-1.5 text-xs font-semibold text-success">
-                <span className="h-2 w-2 rounded-full bg-success" />
-                {t({ en: "Connected", he: "מחובר" })}
+              <p className={cn("flex items-center gap-1.5 text-xs font-semibold", connected ? "text-success" : "text-warning")}>
+                <span className={cn("h-2 w-2 rounded-full", connected ? "bg-success" : "bg-warning")} />
+                {connected
+                  ? t({ en: "Connected", he: "מחובר" })
+                  : t({ en: "Waiting for connection", he: "ממתין לחיבור" })}
               </p>
             </div>
             <button
@@ -128,7 +217,8 @@ function GroupsScreen() {
 
         <ul className="mt-2 space-y-3">
           {filtered.map((group) => {
-            const rec = isRecommended(group);
+            const haystack = `${group.name.en} ${group.name.he}`.toLowerCase();
+            const rec = recommendKeywords.some((keyword) => haystack.includes(keyword.toLowerCase()));
             const on = !!selected[group.id];
             return (
               <li
@@ -152,7 +242,9 @@ function GroupsScreen() {
                   </p>
                   <div className="mt-1 flex flex-wrap items-center gap-1.5">
                     <span className="text-xs text-muted-foreground">
-                      {group.members} {t({ en: "members", he: "חברים" })}
+                      {group.members > 0
+                        ? `${group.members} ${t({ en: "members", he: "חברים" })}`
+                        : t({ en: "WhatsApp group", he: "קבוצת וואטסאפ" })}
                     </span>
                     {rec && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 text-[10px] font-bold text-primary">
@@ -221,17 +313,13 @@ function GroupsScreen() {
       {/* Sticky save */}
       <div className="fixed inset-x-0 bottom-[68px] z-30 mx-auto w-full max-w-md border-t border-border bg-background/95 px-5 py-3 backdrop-blur">
         <button
-          onClick={() =>
-            toast.success(
-              t({
-                en: `Saved ${selectedCount} groups`,
-                he: `נשמרו ${selectedCount} קבוצות`,
-              }),
-            )
-          }
-          className="h-12 w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground transition-opacity hover:opacity-90 active:opacity-80"
+          onClick={saveGroups}
+          disabled={saving || (Boolean(user) && liveGroups.length === 0)}
+          className="h-12 w-full rounded-2xl bg-primary text-[15px] font-bold text-primary-foreground transition-opacity hover:opacity-90 active:opacity-80 disabled:opacity-50"
         >
-          {t({ en: "Save Selected Groups", he: "שמירת הקבוצות שנבחרו" })}
+          {saving
+            ? t({ en: "Saving…", he: "שומר…" })
+            : t({ en: "Save Selected Groups", he: "שמירת הקבוצות שנבחרו" })}
         </button>
       </div>
       <div className="h-16" />

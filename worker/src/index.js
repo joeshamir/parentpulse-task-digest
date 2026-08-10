@@ -11,7 +11,7 @@ import makeWASocket, {
 
 import { env } from './env.js';
 import { extractTask } from './extract.js';
-import { sendTask } from './ingest.js';
+import { sendTask, syncGroups } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
 import {
   startHealthServer,
@@ -19,6 +19,9 @@ import {
   markQr,
   markMessage,
   markTaskSent,
+  markActionable,
+  markIngestFailure,
+  markSkipped,
 } from './health.js';
 
 const logger = pino({ level: 'warn' });
@@ -53,7 +56,11 @@ for (const signal of ['SIGTERM', 'SIGINT']) {
 setInterval(() => {}, 1 << 30);
 
 // --- Message handling --------------------------------------------------
-function isTracked(groupName) {
+let selectedGroupJids = new Set();
+let hasCloudSelections = false;
+
+function isTracked(groupName, jid) {
+  if (hasCloudSelections) return selectedGroupJids.has(jid);
   if (env.trackedGroups.length === 0) return true;
   return env.trackedGroups.some((name) =>
     groupName.toLowerCase().includes(name.toLowerCase()),
@@ -74,8 +81,15 @@ function textOf(message) {
 
 async function handleMessage(sock, message) {
   const jid = message.key?.remoteJid;
-  if (!jid || !jid.endsWith('@g.us')) return; // groups only
-  if (message.key.fromMe) return;
+  if (!jid || !jid.endsWith('@g.us')) {
+    markSkipped('not-group');
+    return;
+  }
+  markMessage();
+  if (message.key.fromMe) {
+    markSkipped('sent-by-self');
+    return;
+  }
 
   let groupName = jid;
   try {
@@ -84,7 +98,10 @@ async function handleMessage(sock, message) {
   } catch {
     /* fall back to jid */
   }
-  if (!isTracked(groupName)) return;
+  if (!isTracked(groupName, jid)) {
+    markSkipped('group-not-tracked');
+    return;
+  }
 
   let text = textOf(message);
 
@@ -93,14 +110,38 @@ async function handleMessage(sock, message) {
     const buffer = await downloadMediaMessage(message, 'buffer', {}, { logger });
     text = await transcribeVoice(buffer);
   }
-  if (!text) return;
+  if (!text) {
+    markSkipped(audio ? 'transcription-unavailable' : 'no-text');
+    return;
+  }
 
-  markMessage();
   const task = extractTask(text, groupName);
   // text stays in memory only; it is never written to disk or a database
   if (task) {
-    await sendTask(task);
-    markTaskSent();
+    markActionable();
+    const sent = await sendTask(task);
+    if (sent) markTaskSent();
+    else markIngestFailure();
+  } else {
+    markSkipped('not-actionable');
+  }
+}
+
+async function refreshGroups(sock, state = 'connected') {
+  try {
+    const metadata = await sock.groupFetchAllParticipating();
+    const available = Object.values(metadata).map((group) => ({
+      jid: group.id,
+      name: group.subject || group.id,
+    }));
+    const rows = await syncGroups(available, state);
+    if (!rows) return;
+    const selected = rows.filter((group) => group.is_tracked);
+    selectedGroupJids = new Set(selected.map((group) => group.group_jid));
+    hasCloudSelections = rows.length > 0;
+    console.log(`[groups] synced ${available.length} groups; ${selected.length} selected`);
+  } catch (error) {
+    console.error('[groups] refresh failed:', error.message);
   }
 }
 
@@ -130,6 +171,7 @@ async function connect() {
     if (qr) {
       qrAttempt += 1;
       markQr();
+      void syncGroups([], 'pending_qr');
       console.log(`\n[whatsapp] ===== QR #${qrAttempt} (use the NEWEST one) =====`);
       console.log('[whatsapp] Easiest: open this link in your browser and scan the image:');
       console.log(
@@ -144,9 +186,11 @@ async function connect() {
       reconnectDelay = 2000;
       setState('connected');
       console.log('[whatsapp] connected');
+      void refreshGroups(socket);
     }
     if (connection === 'close') {
       setState('disconnected');
+      void syncGroups([], 'disconnected');
       const code = lastDisconnect?.error?.output?.statusCode;
       if (code === DisconnectReason.loggedOut) {
         console.error('[whatsapp] logged out — delete the auth volume and re-pair');
@@ -162,7 +206,10 @@ async function connect() {
   });
 
   socket.ev.on('messages.upsert', async ({ messages, type }) => {
-    if (type !== 'notify') return;
+    if (type !== 'notify') {
+      markSkipped(`event-${type || 'unknown'}`);
+      return;
+    }
     for (const message of messages) {
       try {
         await handleMessage(socket, message);
@@ -171,6 +218,10 @@ async function connect() {
       }
     }
   });
+
+  setInterval(() => {
+    if (socket) void refreshGroups(socket);
+  }, 60_000).unref();
 }
 
 console.log('[boot] ParentPulse worker starting');

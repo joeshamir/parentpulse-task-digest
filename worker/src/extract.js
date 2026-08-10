@@ -4,7 +4,9 @@ import { guessCategory } from './ingest.js';
 // only the resulting task title is sent onward (zero chat-log retention).
 const ACTION_HINTS = [
   'bring', 'pay', 'sign', 'permission', 'form', 'deadline', 'due', 'submit', 'remember to', 'don\'t forget',
+  'send', 'register', 'rsvp', 'complete', 'prepare', 'buy', 'wear', 'return', 'please', 'need to', 'must',
   'להביא', 'לשלם', 'לחתום', 'אישור', 'טופס', 'עד יום', 'תזכורת', 'נא להביא', 'אל תשכחו', 'להירשם',
+  'לשלוח', 'לקנות', 'להחזיר', 'להכין', 'למלא', 'לאשר הגעה', 'צריך', 'צריכים', 'חובה', 'נא ', 'בבקשה',
 ];
 
 const DAYS = {

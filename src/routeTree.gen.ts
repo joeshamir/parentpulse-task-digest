@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DigestRouteImport } from './routes/digest'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
+import { Route as ApiPublicWorkerGroupsRouteImport } from './routes/api/public/worker-groups'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const ApiPublicIngestTaskRoute = ApiPublicIngestTaskRouteImport.update({
   path: '/api/public/ingest-task',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWorkerGroupsRoute = ApiPublicWorkerGroupsRouteImport.update({
+  id: '/api/public/worker-groups',
+  path: '/api/public/worker-groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/digest' | '/groups' | '/api/public/ingest-task'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/digest'
+    | '/groups'
+    | '/api/public/ingest-task'
+    | '/api/public/worker-groups'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/digest' | '/groups' | '/api/public/ingest-task'
+  to:
+    | '/'
+    | '/auth'
+    | '/digest'
+    | '/groups'
+    | '/api/public/ingest-task'
+    | '/api/public/worker-groups'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/api/public/ingest-task'
+    | '/api/public/worker-groups'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +105,7 @@ export interface RootRouteChildren {
   DigestRoute: typeof DigestRoute
   GroupsRoute: typeof GroupsRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
+  ApiPublicWorkerGroupsRoute: typeof ApiPublicWorkerGroupsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicIngestTaskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/worker-groups': {
+      id: '/api/public/worker-groups'
+      path: '/api/public/worker-groups'
+      fullPath: '/api/public/worker-groups'
+      preLoaderRoute: typeof ApiPublicWorkerGroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,17 +161,8 @@ const rootRouteChildren: RootRouteChildren = {
   DigestRoute: DigestRoute,
   GroupsRoute: GroupsRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
+  ApiPublicWorkerGroupsRoute: ApiPublicWorkerGroupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
