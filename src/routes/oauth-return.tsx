@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
 
 export const Route = createFileRoute("/oauth-return")({
@@ -22,16 +21,11 @@ export const Route = createFileRoute("/oauth-return")({
 
 function OAuthReturn() {
   const { t, dir } = useLang();
-  const { user } = useAuth();
   const navigate = useNavigate();
-  const started = useRef(false);
   const [status, setStatus] = useState<"working" | "ready" | "failed">("working");
   const [failureReason, setFailureReason] = useState<"missing" | "rejected">("missing");
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-
     let cancelled = false;
     const finish = async () => {
       const callback = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -65,12 +59,15 @@ function OAuthReturn() {
           }
           return;
         }
-      } else if (!user) {
-        if (!cancelled) {
-          setFailureReason("missing");
-          setStatus("failed");
+      } else {
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) {
+          if (!cancelled) {
+            setFailureReason("missing");
+            setStatus("failed");
+          }
+          return;
         }
-        return;
       }
 
       const { data, error } = await supabase.auth.getUser();
@@ -90,7 +87,7 @@ function OAuthReturn() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, user]);
+  }, [navigate]);
 
   const failed = status === "failed";
   const ready = status === "ready";
