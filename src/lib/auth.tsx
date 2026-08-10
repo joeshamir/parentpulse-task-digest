@@ -3,7 +3,6 @@ import type { Session, User } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { hasBackendConfig } from "@/lib/backend-config";
 
 type AuthContextValue = {
   session: Session | null;
@@ -21,11 +20,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!hasBackendConfig()) {
-      setLoading(false);
-      return;
-    }
-
     let active = true;
     const { data: subscription } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
