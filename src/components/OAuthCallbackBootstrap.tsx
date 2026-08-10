@@ -9,6 +9,11 @@ type CallbackTokens = {
   refreshToken: string;
 };
 
+type CallbackResult =
+  | { kind: "none" }
+  | { kind: "valid"; tokens: CallbackTokens }
+  | { kind: "invalid" };
+
 type BootstrapState = "checking" | "ready" | "failed";
 
 const CALLBACK_TIMEOUT_MS = 12_000;
@@ -33,12 +38,15 @@ function withTimeout<T>(promise: Promise<T>): Promise<T> {
   });
 }
 
-function captureCallbackTokens(): CallbackTokens | null {
+function captureCallbackTokens(): CallbackResult {
   const params = new URLSearchParams(window.location.hash.slice(1));
   const accessToken = params.get("access_token");
   const refreshToken = params.get("refresh_token");
+  const isOAuthCallback = Boolean(
+    accessToken || refreshToken || params.get("error") || params.get("error_description"),
+  );
 
-  if (!accessToken || !refreshToken) return null;
+  if (!isOAuthCallback) return { kind: "none" };
 
   window.history.replaceState(
     window.history.state,
@@ -46,7 +54,8 @@ function captureCallbackTokens(): CallbackTokens | null {
     `${window.location.pathname}${window.location.search}`,
   );
 
-  return { accessToken, refreshToken };
+  if (!accessToken || !refreshToken) return { kind: "invalid" };
+  return { kind: "valid", tokens: { accessToken, refreshToken } };
 }
 
 export function OAuthCallbackBootstrap({ children }: { children: ReactNode }) {
@@ -55,10 +64,17 @@ export function OAuthCallbackBootstrap({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    const tokens = captureCallbackTokens();
+    const callback = captureCallbackTokens();
 
-    if (!tokens) {
+    if (callback.kind === "none") {
       setState("ready");
+      return () => {
+        active = false;
+      };
+    }
+
+    if (callback.kind === "invalid") {
+      setState("failed");
       return () => {
         active = false;
       };
@@ -66,8 +82,8 @@ export function OAuthCallbackBootstrap({ children }: { children: ReactNode }) {
 
     void withTimeout(
       supabase.auth.setSession({
-        access_token: tokens.accessToken,
-        refresh_token: tokens.refreshToken,
+        access_token: callback.tokens.accessToken,
+        refresh_token: callback.tokens.refreshToken,
       }),
     )
       .then(async ({ data, error }) => {
