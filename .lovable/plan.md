@@ -1,36 +1,29 @@
-# Self-test a task without waiting for others
+# Change Worker secrets and USER_ID
 
-Add a one-tap "Send me a test task" button so the user can confirm the app works immediately, without waiting for someone else to post in a WhatsApp group.
+Short answer:
+- **USER_ID** — No. This is your Supabase auth user UUID (`8f7300e7-06a5-4322-b391-7364d92fe90c`). It is your permanent account identifier and cannot be regenerated.
+- **WORKER_SECRET** — Yes. This is the shared key your Node worker sends as `api_secret` to `/api/public/ingest-task`. You can rotate it any time.
 
-## What we'll build
+## How to rotate WORKER_SECRET
 
-1. **Authenticated test-task server function**  
-   A thin `createTestTask` server function that inserts one sample `action_items` row for the currently signed-in user.
+1. Generate a new strong random value locally:
 
-2. **"Send me a test task" button in Groups & Settings**  
-   Placed near the save button, visible only when signed in. Tapping it calls the server function and shows a success toast.
+```text
+openssl rand -hex 32
+```
 
-3. **Realtime confirmation**  
-   The Actions tab already subscribes to `action_items` changes, so the test task will appear instantly when the user switches back to the Actions tab.
+2. I will open a secure form where you paste that value to replace the current `WORKER_SECRET` in Lovable Cloud.
+3. You then update the same value in your Railway worker Variables tab as `WORKER_SECRET`.
+4. The old secret stops working immediately, so update Railway right after saving here.
 
-## Why this is safe
+## What does not need to change
 
-- Only the signed-in user can create a task for their own `user_id`.
-- No secrets are exposed in the UI.
-- The test row is a normal `action_items` record, so it exercises the same database, RLS, Realtime, and UI path as a real worker task.
+- `INGEST_URL` and `GROUPS_URL` in Railway stay the same.
+- `USER_ID` in Railway stays the same.
+- No code changes are required; `src/routes/api/public/ingest-task.ts` already reads `process.env['WORKER_SECRET']` and compares it in constant time.
 
-## Out of scope for this plan
+## Acceptance
 
-- This does not test the WhatsApp/Baileys parsing path itself. A full end-to-end worker test still requires either another person sending a message in a tracked group or running a manual `curl` from the Railway terminal using `WORKER_SECRET`.
-
-## Steps
-
-1. Create `src/lib/test-task.functions.ts` with `createTestTask` using `createServerFn` + `requireSupabaseAuth` middleware.
-2. In `src/routes/groups.tsx`, import `useServerFn(createTestTask)` and add a secondary button that calls it.
-3. Verify the inserted row appears in the Actions feed via the existing Realtime subscription.
-4. Run a typecheck/build to confirm no import or auth-middleware issues.
-
-## Files to change
-
-- `src/lib/test-task.functions.ts` (new)
-- `src/routes/groups.tsx` (add button + hook)
+- New `WORKER_SECRET` saved in Lovable Cloud.
+- Railway worker updated with the same new value.
+- A test POST to `/api/public/ingest-task` with the new secret returns `{ success: true, id: ... }`; the old secret returns `401`.
