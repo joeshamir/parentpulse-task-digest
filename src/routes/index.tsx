@@ -145,8 +145,9 @@ function ActionsScreen() {
             </p>
           </div>
           <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-peach font-display text-lg font-extrabold text-peach-foreground">
-            {done}
+            {doneCount}
           </span>
+
         </div>
 
         <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
