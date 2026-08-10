@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { FlaskConical, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -217,6 +217,16 @@ function GroupsScreen() {
               {t({ en: "Re-scan QR", he: "סריקת QR" })}
             </button>
           </div>
+          <button
+            onClick={sendTestTask}
+            disabled={testing}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-accent disabled:opacity-60"
+          >
+            <FlaskConical className="h-4 w-4" />
+            {testing
+              ? t({ en: "Sending…", he: "שולחים…" })
+              : t({ en: "Send test task", he: "שליחת משימת בדיקה" })}
+          </button>
         </div>
       </section>
 
