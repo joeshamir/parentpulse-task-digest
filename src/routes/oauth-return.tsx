@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
@@ -22,42 +22,78 @@ export const Route = createFileRoute("/oauth-return")({
 
 function OAuthReturn() {
   const { t, dir } = useLang();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [failed, setFailed] = useState(false);
+  const started = useRef(false);
+  const [status, setStatus] = useState<"working" | "ready" | "failed">("working");
+  const [failureReason, setFailureReason] = useState<"missing" | "rejected">("missing");
 
   useEffect(() => {
-    if (loading) return;
-    if (user) {
-      const timer = window.setTimeout(() => void navigate({ to: "/", replace: true }), 250);
-      return () => window.clearTimeout(timer);
-    }
+    if (started.current) return;
+    started.current = true;
 
     let cancelled = false;
     const finish = async () => {
-      for (let attempt = 0; attempt < 4; attempt += 1) {
-        const { data, error } = await supabase.auth.getUser();
-        if (cancelled) return;
-        if (!error && data.user) {
-          await navigate({ to: "/", replace: true });
+      const callback = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const accessToken = callback.get("access_token");
+      const refreshToken = callback.get("refresh_token");
+      const providerError = callback.get("error_description") ?? callback.get("error");
+
+      // Remove credentials from the address bar and browser history before
+      // validating them or making any network request.
+      if (window.location.hash) {
+        window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
+      }
+
+      if (providerError) {
+        if (!cancelled) {
+          setFailureReason("rejected");
+          setStatus("failed");
+        }
+        return;
+      }
+
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (error) {
+          if (!cancelled) {
+            setFailureReason("rejected");
+            setStatus("failed");
+          }
           return;
         }
-        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      } else if (!user) {
+        if (!cancelled) {
+          setFailureReason("missing");
+          setStatus("failed");
+        }
+        return;
       }
-      if (!cancelled) {
-        setFailed(true);
-        window.setTimeout(() => {
-          if (!cancelled) void navigate({ to: "/auth", replace: true });
-        }, 1500);
+
+      const { data, error } = await supabase.auth.getUser();
+      if (cancelled) return;
+      if (error || !data.user) {
+        setFailureReason("rejected");
+        setStatus("failed");
+        return;
       }
+
+      setStatus("ready");
+      window.setTimeout(() => {
+        if (!cancelled) void navigate({ to: "/", replace: true });
+      }, 250);
     };
     void finish();
     return () => {
       cancelled = true;
     };
-  }, [loading, navigate, user]);
+  }, [navigate, user]);
 
-  const ready = Boolean(user);
+  const failed = status === "failed";
+  const ready = status === "ready";
 
   return (
     <main dir={dir} className="grid min-h-screen place-items-center bg-surface px-6 text-foreground">
@@ -80,10 +116,15 @@ function OAuthReturn() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {failed
-            ? t({
-                en: "Google approved the request, but no session reached this browser. Please try once more.",
-                he: "גוגל אישרה את הבקשה, אך החיבור לא הגיע לדפדפן. נסו שוב.",
-              })
+            ? failureReason === "missing"
+              ? t({
+                  en: "The sign-in response was incomplete. Please start again from the sign-in screen.",
+                  he: "תגובת ההתחברות לא הייתה מלאה. התחילו שוב ממסך הכניסה.",
+                })
+              : t({
+                  en: "Google sign-in could not be verified. Please try once more.",
+                  he: "לא ניתן היה לאמת את ההתחברות עם גוגל. נסו שוב.",
+                })
             : t({ en: "Securely connecting your ParentPulse account.", he: "מחברים את חשבון ParentPulse באופן מאובטח." })}
         </p>
         {failed && (
