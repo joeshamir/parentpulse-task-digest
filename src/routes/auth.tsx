@@ -33,6 +33,8 @@ function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+
 
   useEffect(() => {
     if (session) navigate({ to: "/" });
