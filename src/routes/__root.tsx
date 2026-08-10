@@ -15,6 +15,7 @@ import { LangProvider } from "../lib/lang";
 import { Toaster } from "../components/ui/sonner";
 import { isBackendConfigError } from "../lib/backend-config";
 import { AuthProvider } from "../lib/auth";
+import { OAuthCallbackBootstrap } from "../components/OAuthCallbackBootstrap";
 
 function NotFoundComponent() {
   return (
@@ -155,9 +156,11 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <LangProvider>
-        <AuthProvider>
-          <Outlet />
-        </AuthProvider>
+        <OAuthCallbackBootstrap>
+          <AuthProvider>
+            <Outlet />
+          </AuthProvider>
+        </OAuthCallbackBootstrap>
       </LangProvider>
     </QueryClientProvider>
   );
