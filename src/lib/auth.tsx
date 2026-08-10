@@ -40,17 +40,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    void supabase.auth.getUser().then(({ data, error }) => {
+    void supabase.auth.getSession().then(({ data: sessionData }) => {
       if (!active) return;
-      if (error || !data.user) {
+      const persistedSession = sessionData.session;
+      if (!persistedSession) {
         setSession(null);
         setLoading(false);
         return;
       }
-      void supabase.auth.getSession().then(({ data: sessionData }) => {
+
+      setSession(persistedSession);
+      setLoading(false);
+
+      // Revalidate the persisted identity with the auth server. This does not
+      // compete with OAuth token storage and clears stale local sessions.
+      void supabase.auth.getUser().then(({ data, error }) => {
         if (!active) return;
-        setSession(sessionData.session);
-        setLoading(false);
+        if (error || !data.user) setSession(null);
       });
     });
 
