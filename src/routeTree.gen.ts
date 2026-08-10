@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DigestRouteImport } from './routes/digest'
 import { Route as GroupsRouteImport } from './routes/groups'
-import { Route as OauthReturnRouteImport } from './routes/oauth-return'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
 import { Route as ApiPublicWorkerGroupsRouteImport } from './routes/api/public/worker-groups'
 
@@ -37,11 +36,6 @@ const GroupsRoute = GroupsRouteImport.update({
   path: '/groups',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OauthReturnRoute = OauthReturnRouteImport.update({
-  id: '/oauth-return',
-  path: '/oauth-return',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicIngestTaskRoute = ApiPublicIngestTaskRouteImport.update({
   id: '/api/public/ingest-task',
   path: '/api/public/ingest-task',
@@ -58,7 +52,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
-  '/oauth-return': typeof OauthReturnRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -67,7 +60,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
-  '/oauth-return': typeof OauthReturnRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -77,7 +69,6 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
-  '/oauth-return': typeof OauthReturnRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -88,7 +79,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/digest'
     | '/groups'
-    | '/oauth-return'
     | '/api/public/ingest-task'
     | '/api/public/worker-groups'
   fileRoutesByTo: FileRoutesByTo
@@ -97,7 +87,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/digest'
     | '/groups'
-    | '/oauth-return'
     | '/api/public/ingest-task'
     | '/api/public/worker-groups'
   id:
@@ -106,7 +95,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/digest'
     | '/groups'
-    | '/oauth-return'
     | '/api/public/ingest-task'
     | '/api/public/worker-groups'
   fileRoutesById: FileRoutesById
@@ -116,7 +104,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DigestRoute: typeof DigestRoute
   GroupsRoute: typeof GroupsRoute
-  OauthReturnRoute: typeof OauthReturnRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
   ApiPublicWorkerGroupsRoute: typeof ApiPublicWorkerGroupsRoute
 }
@@ -151,13 +138,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GroupsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/oauth-return': {
-      id: '/oauth-return'
-      path: '/oauth-return'
-      fullPath: '/oauth-return'
-      preLoaderRoute: typeof OauthReturnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/ingest-task': {
       id: '/api/public/ingest-task'
       path: '/api/public/ingest-task'
@@ -180,20 +160,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DigestRoute: DigestRoute,
   GroupsRoute: GroupsRoute,
-  OauthReturnRoute: OauthReturnRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
   ApiPublicWorkerGroupsRoute: ApiPublicWorkerGroupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
