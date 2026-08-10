@@ -4,6 +4,24 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLang } from "@/lib/lang";
 
+const AUTH_TIMEOUT_MS = 5000;
+
+function withTimeout<T>(operation: PromiseLike<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error("Authentication timed out")), AUTH_TIMEOUT_MS);
+    Promise.resolve(operation).then(
+      (result) => {
+        window.clearTimeout(timer);
+        resolve(result);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
 export const Route = createFileRoute("/oauth-return")({
   ssr: false,
   head: () => ({
@@ -28,60 +46,62 @@ function OAuthReturn() {
   useEffect(() => {
     let cancelled = false;
     const finish = async () => {
-      const callback = new URLSearchParams(window.location.hash.replace(/^#/, ""));
-      const accessToken = callback.get("access_token");
-      const refreshToken = callback.get("refresh_token");
-      const providerError = callback.get("error_description") ?? callback.get("error");
+      try {
+        const callback = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        const accessToken = callback.get("access_token");
+        const refreshToken = callback.get("refresh_token");
+        const providerError = callback.get("error_description") ?? callback.get("error");
 
-      // Remove credentials from the address bar and browser history before
-      // validating them or making any network request.
-      if (window.location.hash) {
-        window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
-      }
-
-      if (providerError) {
-        if (!cancelled) {
-          setFailureReason("rejected");
-          setStatus("failed");
+        // Remove credentials from the address bar and browser history before
+        // validating them or making any network request.
+        if (window.location.hash) {
+          window.history.replaceState(window.history.state, "", window.location.pathname + window.location.search);
         }
-        return;
-      }
 
-      if (accessToken && refreshToken) {
-        const { error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (error) {
+        if (providerError) {
           if (!cancelled) {
             setFailureReason("rejected");
             setStatus("failed");
           }
           return;
         }
-      } else {
-        const { data } = await supabase.auth.getUser();
-        if (!data.user) {
-          if (!cancelled) {
-            setFailureReason("missing");
-            setStatus("failed");
+
+        if (accessToken && refreshToken) {
+          const { data, error } = await withTimeout(
+            supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            }),
+          );
+          if (error || !data.session?.user) {
+            if (!cancelled) {
+              setFailureReason("rejected");
+              setStatus("failed");
+            }
+            return;
           }
-          return;
+        } else {
+          const { data, error } = await withTimeout(supabase.auth.getUser());
+          if (error || !data.user) {
+            if (!cancelled) {
+              setFailureReason("missing");
+              setStatus("failed");
+            }
+            return;
+          }
+        }
+
+        if (cancelled) return;
+        setStatus("ready");
+        window.setTimeout(() => {
+          if (!cancelled) window.location.replace("/");
+        }, 250);
+      } catch {
+        if (!cancelled) {
+          setFailureReason("rejected");
+          setStatus("failed");
         }
       }
-
-      const { data, error } = await supabase.auth.getUser();
-      if (cancelled) return;
-      if (error || !data.user) {
-        setFailureReason("rejected");
-        setStatus("failed");
-        return;
-      }
-
-      setStatus("ready");
-      window.setTimeout(() => {
-        if (!cancelled) void navigate({ to: "/", replace: true });
-      }, 250);
     };
     void finish();
     return () => {
