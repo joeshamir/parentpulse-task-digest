@@ -25,6 +25,7 @@ resulting task title, category, and deadline are sent onward.
    | `GROQ_API_KEY` | Groq key for voice transcription |
    | `AUTH_DIR` | `/data/auth_session` |
    | `INGEST_URL` | `https://parentpulse-task-digest.lovable.app/api/public/ingest-task` |
+   | `GROUPS_URL` | `https://parentpulse-task-digest.lovable.app/api/public/worker-groups` |
    | `TRACKED_GROUPS` | optional comma-separated group names |
 
 5. Open the deploy logs on first boot and scan the printed QR code from
@@ -41,8 +42,7 @@ npm run dev
 
 ## Notes
 
-- No HTTP port is exposed; this is a worker, not a web service. Do not add a
-  health check in Railway or the deploy will be marked unhealthy.
+- The worker exposes `/health` on Railway's assigned port for safe diagnostics.
 - `restartPolicyType: ALWAYS` restarts the container if the process ever dies.
 - `uncaughtException` / `unhandledRejection` are logged, not fatal; the socket
   reconnects with exponential backoff up to 60s.

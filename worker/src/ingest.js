@@ -42,7 +42,8 @@ export async function sendTask({ groupName, title, category, deadline }) {
         return false;
       }
       if (res.status < 500) {
-        console.error(`[ingest] rejected (${res.status})`);
+        const detail = await res.text().catch(() => '');
+        console.error(`[ingest] rejected (${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}`);
         return false;
       }
     } catch (error) {
@@ -51,4 +52,28 @@ export async function sendTask({ groupName, title, category, deadline }) {
     await new Promise((r) => setTimeout(r, attempt * 2000));
   }
   return false;
+}
+
+export async function syncGroups(groups = [], state) {
+  try {
+    const res = await fetch(env.groupsUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        api_secret: env.workerSecret,
+        user_id: env.userId,
+        groups,
+        state,
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[groups] sync rejected (${res.status})`);
+      return null;
+    }
+    const body = await res.json();
+    return Array.isArray(body.groups) ? body.groups : [];
+  } catch (error) {
+    console.error('[groups] sync failed:', error.message);
+    return null;
+  }
 }

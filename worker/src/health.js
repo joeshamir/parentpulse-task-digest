@@ -10,6 +10,10 @@ export const status = {
   lastMessageAt: null,
   lastTaskAt: null,
   tasksSent: 0,
+  messagesReceived: 0,
+  actionableMessages: 0,
+  ingestFailures: 0,
+  skipped: {},
 };
 
 export function setState(state) {
@@ -23,7 +27,20 @@ export function markQr() {
 }
 
 export function markMessage() {
+  status.messagesReceived += 1;
   status.lastMessageAt = new Date().toISOString();
+}
+
+export function markActionable() {
+  status.actionableMessages += 1;
+}
+
+export function markIngestFailure() {
+  status.ingestFailures += 1;
+}
+
+export function markSkipped(reason) {
+  status.skipped[reason] = (status.skipped[reason] || 0) + 1;
 }
 
 export function markTaskSent() {

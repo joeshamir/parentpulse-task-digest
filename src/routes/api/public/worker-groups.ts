@@ -10,6 +10,7 @@ const payloadSchema = z.object({
   api_secret: z.string().min(1),
   user_id: z.string().uuid(),
   groups: z.array(groupSchema).max(500).optional(),
+  state: z.enum(['pending_qr', 'connected', 'disconnected']).optional(),
 });
 
 const CORS_HEADERS: Record<string, string> = {
@@ -47,7 +48,16 @@ export const Route = createFileRoute('/api/public/worker-groups')({
         }
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-        const { user_id: userId, groups = [] } = parsed.data;
+        const { user_id: userId, groups = [], state } = parsed.data;
+        if (state) {
+          const { error: sessionError } = await supabaseAdmin
+            .from('whatsapp_sessions')
+            .upsert(
+              { user_id: userId, status: state, qr_code_str: null, updated_at: new Date().toISOString() },
+              { onConflict: 'user_id' },
+            );
+          if (sessionError) return json({ success: false, error: 'session sync failed' }, 500);
+        }
         if (groups.length > 0) {
           const { data: known, error: readError } = await supabaseAdmin
             .from('tracked_groups')

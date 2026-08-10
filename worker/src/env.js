@@ -15,6 +15,9 @@ export const env = {
   ingestUrl:
     process.env.INGEST_URL ||
     'https://parentpulse-task-digest.lovable.app/api/public/ingest-task',
+  groupsUrl:
+    process.env.GROUPS_URL ||
+    'https://parentpulse-task-digest.lovable.app/api/public/worker-groups',
   workerSecret: required('WORKER_SECRET'),
   userId: required('USER_ID'),
   groqApiKey: process.env.GROQ_API_KEY || '',
