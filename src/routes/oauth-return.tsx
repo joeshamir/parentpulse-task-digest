@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { CheckCircle2, LoaderCircle, TriangleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +39,6 @@ export const Route = createFileRoute("/oauth-return")({
 
 function OAuthReturn() {
   const { t, dir } = useLang();
-  const navigate = useNavigate();
   const [status, setStatus] = useState<"working" | "ready" | "failed">("working");
   const [failureReason, setFailureReason] = useState<"missing" | "rejected">("missing");
 
@@ -107,7 +106,7 @@ function OAuthReturn() {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, []);
 
   const failed = status === "failed";
   const ready = status === "ready";
