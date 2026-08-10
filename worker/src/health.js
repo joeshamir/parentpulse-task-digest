@@ -16,7 +16,22 @@ export const status = {
   selectedGroups: 0,
   lastGroupSyncAt: null,
   skipped: {},
+  selectedGroupNames: [],
+  // Rolling log of the last decisions. Never contains message text.
+  recentDecisions: [],
 };
+
+const MAX_DECISIONS = 20;
+
+export function logDecision(decision, groupName = null, detail = null) {
+  status.recentDecisions.unshift({
+    at: new Date().toISOString(),
+    decision,
+    group: groupName ? String(groupName).slice(0, 80) : null,
+    detail: detail ? String(detail).slice(0, 80) : null,
+  });
+  if (status.recentDecisions.length > MAX_DECISIONS) status.recentDecisions.pop();
+}
 
 export function setState(state) {
   status.state = state;
@@ -50,8 +65,9 @@ export function markTaskSent() {
   status.lastTaskAt = new Date().toISOString();
 }
 
-export function markGroupSync(selectedGroups) {
+export function markGroupSync(selectedGroups, names = []) {
   status.selectedGroups = selectedGroups;
+  status.selectedGroupNames = names.slice(0, 100);
   status.lastGroupSyncAt = new Date().toISOString();
 }
 

@@ -46,6 +46,7 @@ export async function sendTask({ groupName, title, category, deadline }) {
         console.error(`[ingest] rejected (${res.status})${detail ? `: ${detail.slice(0, 160)}` : ''}`);
         return false;
       }
+      console.error(`[ingest] server error (${res.status}), retrying`);
     } catch (error) {
       console.error(`[ingest] attempt ${attempt} failed:`, error.message);
     }

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { FlaskConical, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -53,6 +53,7 @@ function GroupsScreen() {
   >([]);
   const [connection, setConnection] = useState("pending_qr");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -148,6 +149,32 @@ function GroupsScreen() {
     toast.success(t({ en: `Saved ${selectedCount} groups`, he: `נשמרו ${selectedCount} קבוצות` }));
   }
 
+  async function sendTestTask() {
+    if (!user) {
+      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      return;
+    }
+    setTesting(true);
+    const firstSelected = liveGroups.find((group) => selected[group.id]);
+    const { error } = await supabase.from("action_items").insert({
+      user_id: user.id,
+      group_name: firstSelected?.name ?? "ParentPulse",
+      title: t({
+        en: "Test task — pay 25₪ to the class committee",
+        he: "משימת בדיקה — לשלם 25₪ לוועד כיתה",
+      }),
+      category: "School",
+    });
+    setTesting(false);
+    if (error) {
+      toast.error(t({ en: "Could not create the test task.", he: "לא ניתן ליצור משימת בדיקה." }));
+      return;
+    }
+    toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
+  }
+
+
+
   return (
     <MobileShell>
       <header className="px-5 pt-4">
@@ -190,6 +217,16 @@ function GroupsScreen() {
               {t({ en: "Re-scan QR", he: "סריקת QR" })}
             </button>
           </div>
+          <button
+            onClick={sendTestTask}
+            disabled={testing}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-border px-3 py-2.5 text-xs font-bold text-muted-foreground transition-colors hover:bg-accent disabled:opacity-60"
+          >
+            <FlaskConical className="h-4 w-4" />
+            {testing
+              ? t({ en: "Sending…", he: "שולחים…" })
+              : t({ en: "Send test task", he: "שליחת משימת בדיקה" })}
+          </button>
         </div>
       </section>
 

@@ -59,25 +59,18 @@ export const Route = createFileRoute('/api/public/worker-groups')({
           if (sessionError) return json({ success: false, error: 'session sync failed' }, 500);
         }
         if (groups.length > 0) {
-          const { data: known, error: readError } = await supabaseAdmin
+          // Unique (user_id, group_jid) makes this idempotent under concurrent
+          // syncs; ignoreDuplicates keeps existing selections untouched.
+          const rows = groups.map((group) => ({
+            user_id: userId,
+            group_jid: group.jid,
+            group_name: group.name,
+            is_tracked: false,
+          }));
+          const { error: upsertError } = await supabaseAdmin
             .from('tracked_groups')
-            .select('group_jid')
-            .eq('user_id', userId);
-          if (readError) return json({ success: false, error: 'group sync failed' }, 500);
-
-          const knownJids = new Set((known ?? []).map((row) => row.group_jid));
-          const missing = groups
-            .filter((group) => !knownJids.has(group.jid))
-            .map((group) => ({
-              user_id: userId,
-              group_jid: group.jid,
-              group_name: group.name,
-              is_tracked: false,
-            }));
-          if (missing.length > 0) {
-            const { error: insertError } = await supabaseAdmin.from('tracked_groups').insert(missing);
-            if (insertError) return json({ success: false, error: 'group sync failed' }, 500);
-          }
+            .upsert(rows, { onConflict: 'user_id,group_jid', ignoreDuplicates: true });
+          if (upsertError) return json({ success: false, error: 'group sync failed' }, 500);
         }
 
         const { data, error } = await supabaseAdmin
