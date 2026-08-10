@@ -65,13 +65,6 @@ function AuthScreen() {
     }
   }
 
-  function redirectSignIn() {
-    const origin = window.location.origin;
-    window.location.href = `/~oauth/initiate?provider=google&redirect_uri=${encodeURIComponent(
-      origin,
-    )}`;
-  }
-
   async function google() {
     if (googleBusy) return;
     setGoogleBusy(true);
@@ -81,21 +74,18 @@ function AuthScreen() {
       });
       if (result.error) {
         const message = result.error.message ?? "";
-        if (/popup|blocked|window/i.test(message)) {
-          redirectSignIn();
-          return;
-        }
         toast.error(
           message || t({ en: "Google sign-in failed.", he: "ההתחברות עם גוגל נכשלה." }),
         );
         return;
       }
       if (result.redirected) return;
-      navigate({ to: "/" });
     } catch (err) {
-      // Popup blocked or the sign-in window was closed: fall back to a full-page redirect.
-      redirectSignIn();
-      void err;
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : t({ en: "Google sign-in failed. Please try again.", he: "ההתחברות עם גוגל נכשלה. נסו שוב." }),
+      );
     } finally {
       setGoogleBusy(false);
     }
