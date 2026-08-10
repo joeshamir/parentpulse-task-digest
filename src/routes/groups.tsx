@@ -53,6 +53,7 @@ function GroupsScreen() {
   >([]);
   const [connection, setConnection] = useState("pending_qr");
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -147,6 +148,32 @@ function GroupsScreen() {
     window.dispatchEvent(new CustomEvent("parentpulse:groups-saved"));
     toast.success(t({ en: `Saved ${selectedCount} groups`, he: `נשמרו ${selectedCount} קבוצות` }));
   }
+
+  async function sendTestTask() {
+    if (!user) {
+      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      return;
+    }
+    setTesting(true);
+    const firstSelected = liveGroups.find((group) => selected[group.id]);
+    const { error } = await supabase.from("action_items").insert({
+      user_id: user.id,
+      group_name: firstSelected?.name ?? "ParentPulse",
+      title: t({
+        en: "Test task — pay 25₪ to the class committee",
+        he: "משימת בדיקה — לשלם 25₪ לוועד כיתה",
+      }),
+      category: "School",
+    });
+    setTesting(false);
+    if (error) {
+      toast.error(t({ en: "Could not create the test task.", he: "לא ניתן ליצור משימת בדיקה." }));
+      return;
+    }
+    toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
+  }
+
+
 
   return (
     <MobileShell>
