@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { LoaderCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/browser-client";
 import { useLang } from "@/lib/lang";
 
 type CallbackTokens = {
