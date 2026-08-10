@@ -114,6 +114,9 @@ function ActionsScreen() {
   const pending = signedIn
     ? rows.filter((r) => !r.is_completed).length
     : demoTasks.filter((task) => !demoDone.includes(task.id)).length;
+  const doneCount = source.length - pending;
+
+
 
   const today = new Date().toLocaleDateString(lang === "he" ? "he-IL" : "en-GB", {
     weekday: "long",
