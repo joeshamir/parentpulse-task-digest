@@ -61,7 +61,8 @@ function GroupsScreen() {
   const [awaitingQrSince, setAwaitingQrSince] = useState<number | null>(null);
   const [qrTimedOut, setQrTimedOut] = useState(false);
   const [autoRetried, setAutoRetried] = useState(false);
-  const [showRestartHelp, setShowRestartHelp] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+
 
 
   useEffect(() => {
