@@ -291,7 +291,7 @@ function GroupsScreen() {
           {showQr && (
             <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode ?? "")}`}
                 alt={t({ en: "WhatsApp pairing QR code", he: "קוד QR לצימוד וואטסאפ" })}
                 className="h-44 w-44 rounded-lg"
               />
