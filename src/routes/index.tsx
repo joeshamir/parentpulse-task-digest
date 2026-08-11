@@ -215,6 +215,8 @@ function ActionsScreen() {
                   task={task}
                   done={row.is_completed}
                   onToggle={() => toggleComplete(row)}
+                  onDelete={() => deleteTask(row)}
+
                 />
               ))
           : visible.map((task) => (
