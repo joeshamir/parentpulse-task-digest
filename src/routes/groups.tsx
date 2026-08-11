@@ -259,7 +259,19 @@ function GroupsScreen() {
   const showQr = Boolean(qrCode) && connection !== "connected" && !bridgeOffline;
   const awaitingQr = Boolean(awaitingQrSince) && !qrCode && !bridgeOffline;
 
-  const disconnected = connection === "disconnected";
+  const disconnected = connection === "disconnected" && !bridgeOffline;
+  const live = connected && !bridgeOffline;
+  const secondsSinceSeen = lastSeen ? Math.max(0, Math.round((now - lastSeen) / 1000)) : null;
+  const lastActivity =
+    secondsSinceSeen === null
+      ? null
+      : secondsSinceSeen < 60
+        ? t({ en: "Last activity just now", he: "פעילות אחרונה ממש עכשיו" })
+        : t({
+            en: `Last activity ${Math.round(secondsSinceSeen / 60)} min ago`,
+            he: `פעילות אחרונה לפני ${Math.round(secondsSinceSeen / 60)} דק׳`,
+          });
+
 
   return (
     <MobileShell>
