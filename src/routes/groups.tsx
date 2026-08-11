@@ -223,7 +223,7 @@ function GroupsScreen() {
     toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
   }
 
-  async function requestReconnect() {
+  async function requestReconnect(silent = false) {
     if (!user) {
       toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
       return;
@@ -231,10 +231,12 @@ function GroupsScreen() {
     setRequestingReconnect(true);
     setQrTimedOut(false);
     setQrCode(null);
+    // updated_at is deliberately NOT set here: it is the worker's heartbeat,
+    // and writing it from the app would fake a live bridge.
     const { error } = await supabase
       .from("whatsapp_sessions")
       .upsert(
-        { user_id: user.id, reconnect_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { user_id: user.id, reconnect_requested_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
     setRequestingReconnect(false);
@@ -243,11 +245,20 @@ function GroupsScreen() {
       return;
     }
     setAwaitingQrSince(Date.now());
-    toast.success(t({ en: "Reconnect requested — a fresh QR will appear shortly", he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע בקרוב" }));
+    if (!silent) {
+      toast.success(
+        t({
+          en: "Reconnect requested — a fresh QR will appear in a few seconds",
+          he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע תוך שניות",
+        }),
+      );
+    }
   }
 
-  const showQr = Boolean(qrCode) && connection !== "connected";
-  const awaitingQr = Boolean(awaitingQrSince) && !qrCode;
+  const bridgeOffline = lastSeen === null || now - lastSeen > 45_000;
+  const showQr = Boolean(qrCode) && connection !== "connected" && !bridgeOffline;
+  const awaitingQr = Boolean(awaitingQrSince) && !qrCode && !bridgeOffline;
+
   const disconnected = connection === "disconnected";
 
   return (
