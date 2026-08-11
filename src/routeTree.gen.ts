@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DigestRouteImport } from './routes/digest'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as ApiRestartBridgeRouteImport } from './routes/api/restart-bridge'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
 import { Route as ApiPublicWorkerGroupsRouteImport } from './routes/api/public/worker-groups'
 
@@ -42,6 +43,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRestartBridgeRoute = ApiRestartBridgeRouteImport.update({
+  id: '/api/restart-bridge',
+  path: '/api/restart-bridge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicIngestTaskRoute = ApiPublicIngestTaskRouteImport.update({
   id: '/api/public/ingest-task',
   path: '/api/public/ingest-task',
@@ -59,6 +65,7 @@ export interface FileRoutesByFullPath {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
+  '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -68,6 +75,7 @@ export interface FileRoutesByTo {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
+  '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -78,6 +86,7 @@ export interface FileRoutesById {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
+  '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -89,6 +98,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/privacy'
+    | '/api/restart-bridge'
     | '/api/public/ingest-task'
     | '/api/public/worker-groups'
   fileRoutesByTo: FileRoutesByTo
@@ -98,6 +108,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/privacy'
+    | '/api/restart-bridge'
     | '/api/public/ingest-task'
     | '/api/public/worker-groups'
   id:
@@ -107,6 +118,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/privacy'
+    | '/api/restart-bridge'
     | '/api/public/ingest-task'
     | '/api/public/worker-groups'
   fileRoutesById: FileRoutesById
@@ -117,6 +129,7 @@ export interface RootRouteChildren {
   DigestRoute: typeof DigestRoute
   GroupsRoute: typeof GroupsRoute
   PrivacyRoute: typeof PrivacyRoute
+  ApiRestartBridgeRoute: typeof ApiRestartBridgeRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
   ApiPublicWorkerGroupsRoute: typeof ApiPublicWorkerGroupsRoute
 }
@@ -158,6 +171,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/restart-bridge': {
+      id: '/api/restart-bridge'
+      path: '/api/restart-bridge'
+      fullPath: '/api/restart-bridge'
+      preLoaderRoute: typeof ApiRestartBridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ingest-task': {
       id: '/api/public/ingest-task'
       path: '/api/public/ingest-task'
@@ -181,19 +201,10 @@ const rootRouteChildren: RootRouteChildren = {
   DigestRoute: DigestRoute,
   GroupsRoute: GroupsRoute,
   PrivacyRoute: PrivacyRoute,
+  ApiRestartBridgeRoute: ApiRestartBridgeRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
   ApiPublicWorkerGroupsRoute: ApiPublicWorkerGroupsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
