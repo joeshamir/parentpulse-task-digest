@@ -105,6 +105,7 @@ export type Database = {
         Row: {
           id: string
           qr_code_str: string | null
+          reconnect_requested_at: string | null
           status: string
           updated_at: string
           user_id: string
@@ -112,6 +113,7 @@ export type Database = {
         Insert: {
           id?: string
           qr_code_str?: string | null
+          reconnect_requested_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -119,6 +121,7 @@ export type Database = {
         Update: {
           id?: string
           qr_code_str?: string | null
+          reconnect_requested_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string

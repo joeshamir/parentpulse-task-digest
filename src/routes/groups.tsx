@@ -52,8 +52,10 @@ function GroupsScreen() {
     Array<{ id: string; jid: string; name: string; members: number; hue: string }>
   >([]);
   const [connection, setConnection] = useState("pending_qr");
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [requestingReconnect, setRequestingReconnect] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -65,7 +67,7 @@ function GroupsScreen() {
         .order("group_name"),
       supabase
         .from("whatsapp_sessions")
-        .select("status")
+        .select("status, qr_code_str")
         .eq("user_id", user.id)
         .maybeSingle(),
     ]).then(([groupsResult, sessionResult]) => {
@@ -86,6 +88,7 @@ function GroupsScreen() {
         setSelected(Object.fromEntries(rows.map((row) => [row.id, row.is_tracked])));
       }
       if (sessionResult.data?.status) setConnection(sessionResult.data.status);
+      if (sessionResult.data?.qr_code_str) setQrCode(sessionResult.data.qr_code_str);
     });
 
     const channel = supabase
@@ -98,7 +101,10 @@ function GroupsScreen() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
-        (payload) => setConnection((payload.new as { status?: string }).status ?? "pending_qr"),
+        (payload) => {
+          setConnection((payload.new as { status?: string }).status ?? "pending_qr");
+          setQrCode((payload.new as { qr_code_str?: string | null }).qr_code_str ?? null);
+        },
       )
       .subscribe();
     return () => {
@@ -173,7 +179,28 @@ function GroupsScreen() {
     toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
   }
 
+  async function requestReconnect() {
+    if (!user) {
+      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      return;
+    }
+    setRequestingReconnect(true);
+    const { error } = await supabase
+      .from("whatsapp_sessions")
+      .upsert(
+        { user_id: user.id, reconnect_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      );
+    setRequestingReconnect(false);
+    if (error) {
+      toast.error(t({ en: "Could not request reconnect.", he: "לא ניתן לבקש חיבור מחדש." }));
+      return;
+    }
+    toast.success(t({ en: "Reconnect requested — a fresh QR will appear shortly", he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע בקרוב" }));
+  }
 
+  const showQr = connection === "pending_qr" && qrCode;
+  const disconnected = connection === "disconnected";
 
   return (
     <MobileShell>
@@ -200,23 +227,43 @@ function GroupsScreen() {
               <p className="truncate text-[14px] font-semibold tracking-tight text-card-foreground">
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
-              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", connected ? "text-success" : "text-muted-foreground")}>
-                <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-success" : "bg-warning")} />
+              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", connected ? "text-success" : disconnected ? "text-destructive" : "text-muted-foreground")}>
+                <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-success" : disconnected ? "bg-destructive" : "bg-warning")} />
                 {connected
                   ? t({ en: "Connected", he: "מחובר" })
-                  : t({ en: "Waiting for connection", he: "ממתין לחיבור" })}
+                  : disconnected
+                    ? t({ en: "Disconnected", he: "מנותק" })
+                    : t({ en: "Waiting for QR scan", he: "ממתין לסריקת QR" })}
               </p>
             </div>
             <button
-              onClick={() =>
-                toast(t({ en: "Generating new QR code…", he: "מייצרים קוד QR חדש…" }))
-              }
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              onClick={requestReconnect}
+              disabled={requestingReconnect}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
             >
               <QrCode className="h-3.5 w-3.5" />
-              {t({ en: "Re-scan QR", he: "סריקת QR" })}
+              {requestingReconnect
+                ? t({ en: "Requesting…", he: "מבקשים…" })
+                : t({ en: "Re-scan QR", he: "סריקת QR" })}
             </button>
           </div>
+
+          {showQr && (
+            <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`}
+                alt={t({ en: "WhatsApp pairing QR code", he: "קוד QR לצימוד וואטסאפ" })}
+                className="h-44 w-44 rounded-lg"
+              />
+              <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
+                {t({
+                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code.",
+                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד הזה.",
+                })}
+              </p>
+            </div>
+          )}
+
           <button
             onClick={sendTestTask}
             disabled={testing}
