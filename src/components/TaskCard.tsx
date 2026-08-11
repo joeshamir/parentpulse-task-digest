@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Clock, GraduationCap, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLang } from "@/lib/lang";
@@ -31,9 +31,27 @@ export function TaskCard({
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Swipe left (LTR) / right (RTL) to reveal the delete action.
-  const dir = rtl ? 1 : -1;
+  // The delete panel sits on the trailing edge in LTR and the leading (right)
+  // edge in RTL — in both cases it is on the right, so the card always slides left.
+  const dir = -1;
+  const open = offset !== 0;
+
+  // Snap closed when the card's data changes (list refresh, completion, etc.).
+  useEffect(() => {
+    setOffset(0);
+  }, [task.id, done, lang]);
+
+  // Snap closed on any interaction outside this card.
+  useEffect(() => {
+    if (!open) return;
+    function onDocPointerDown(e: PointerEvent) {
+      if (!rootRef.current?.contains(e.target as Node)) setOffset(0);
+    }
+    document.addEventListener("pointerdown", onDocPointerDown);
+    return () => document.removeEventListener("pointerdown", onDocPointerDown);
+  }, [open]);
 
   function onPointerDown(e: React.PointerEvent) {
     if (!onDelete || e.pointerType === "mouse") return;
@@ -58,14 +76,14 @@ export function TaskCard({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-xl">
+    <div ref={rootRef} className="relative overflow-hidden rounded-xl">
       {onDelete && (
         <button
           onClick={onDelete}
           aria-label={t({ en: "Delete task", he: "מחיקת משימה" })}
           className={cn(
-            "absolute inset-y-0 flex w-[84px] items-center justify-center bg-destructive text-destructive-foreground",
-            rtl ? "start-0" : "end-0",
+            "absolute inset-y-0 right-0 flex w-[84px] items-center justify-center rounded-e-xl bg-destructive text-destructive-foreground",
+            rtl && "rounded-e-none rounded-s-xl",
           )}
         >
           <Trash2 className="h-5 w-5" />
@@ -137,7 +155,10 @@ export function TaskCard({
 
         <div className="mt-3.5 flex items-center gap-2 border-t border-border pt-3">
           <button
-            onClick={onToggle}
+            onClick={() => {
+              setOffset(0);
+              onToggle();
+            }}
             className={cn(
               "inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-tight transition-colors",
               done
