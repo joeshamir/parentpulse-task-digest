@@ -53,11 +53,16 @@ function GroupsScreen() {
   >([]);
   const [connection, setConnection] = useState("pending_qr");
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [lastSeen, setLastSeen] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [requestingReconnect, setRequestingReconnect] = useState(false);
   const [awaitingQrSince, setAwaitingQrSince] = useState<number | null>(null);
   const [qrTimedOut, setQrTimedOut] = useState(false);
+  const [autoRetried, setAutoRetried] = useState(false);
+  const [showRestartHelp, setShowRestartHelp] = useState(false);
+
 
   useEffect(() => {
     if (!user) return;
