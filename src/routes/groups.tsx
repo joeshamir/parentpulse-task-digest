@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, FlaskConical, Loader2, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, FlaskConical, Loader2, QrCode, RefreshCw, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -61,7 +61,8 @@ function GroupsScreen() {
   const [awaitingQrSince, setAwaitingQrSince] = useState<number | null>(null);
   const [qrTimedOut, setQrTimedOut] = useState(false);
   const [autoRetried, setAutoRetried] = useState(false);
-  const [showRestartHelp, setShowRestartHelp] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+
 
 
   useEffect(() => {
@@ -255,6 +256,53 @@ function GroupsScreen() {
     }
   }
 
+  async function restartBridge() {
+    if (!user) {
+      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      return;
+    }
+    setRestarting(true);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session?.access_token) {
+      setRestarting(false);
+      toast.error(
+        t({
+          en: "Could not get your session. Please sign in again.",
+          he: "לא ניתן לקבל את הסשן. אנא התחברו שוב.",
+        }),
+      );
+      return;
+    }
+    try {
+      const res = await fetch("/api/restart-bridge", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+      });
+      const body = (await res.json()) as { success?: boolean; error?: string; message?: string };
+      if (res.ok && body.success) {
+        toast.success(
+          t({
+            en: "Restart requested. The connector should be back online within 30–60 seconds.",
+            he: "בקשת ההפעלה נשלחה. המחבר אמור לחזור לפעולה תוך 30–60 שניות.",
+          }),
+        );
+        setAwaitingQrSince(Date.now());
+      } else {
+        toast.error(
+          t({
+            en: body.error || "Could not restart the connector.",
+            he: "לא ניתן להפעיל את המחבר מחדש.",
+          }),
+        );
+      }
+    } catch {
+      toast.error(t({ en: "Network error. Please try again.", he: "שגיאת רשת. אנא נסו שוב." }));
+    } finally {
+      setRestarting(false);
+    }
+  }
+
+
   const bridgeOffline = lastSeen === null || now - lastSeen > 45_000;
   const showQr = Boolean(qrCode) && connection !== "connected" && !bridgeOffline;
   const awaitingQr = Boolean(awaitingQrSince) && !qrCode && !bridgeOffline;
@@ -359,21 +407,31 @@ function GroupsScreen() {
                 })}
               </p>
               <button
-                onClick={() => setShowRestartHelp((v) => !v)}
-                className="mt-2 text-[12px] font-semibold text-primary underline underline-offset-2"
+                onClick={() => void restartBridge()}
+                disabled={restarting}
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-warning px-3 py-2 text-[12px] font-semibold text-warning-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
               >
-                {t({ en: "How to restart it", he: "איך להפעיל אותו מחדש" })}
+                {restarting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {t({ en: "Restarting connector…", he: "מפעילים את המחבר מחדש…" })}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    {t({ en: "Restart connector", he: "הפעלת המחבר מחדש" })}
+                  </>
+                )}
               </button>
-              {showRestartHelp && (
-                <p className="mt-2 text-[12px] font-medium leading-relaxed text-muted-foreground">
-                  {t({
-                    en: "Open your Railway project, select the ParentPulse worker service and press Restart (or Deploy if it was never updated). It comes back within a minute and this card turns green on its own.",
-                    he: "פתחו את פרויקט Railway, בחרו את שירות ה-worker של ParentPulse ולחצו Restart (או Deploy אם הוא מעולם לא עודכן). הוא חוזר לפעולה תוך דקה והכרטיס הזה יתעדכן לבד.",
-                  })}
-                </p>
-              )}
+              <p className="mt-2 text-[11px] font-medium leading-relaxed text-muted-foreground">
+                {t({
+                  en: "This asks Railway to restart the worker. It usually takes 30–60 seconds.",
+                  he: "פעולה זו מבקשת מ-Railway להפעיל את ה-worker מחדש. זה לוקח בדרך כלל 30–60 שניות.",
+                })}
+              </p>
             </div>
           )}
+
 
           {awaitingQr && (
             <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
