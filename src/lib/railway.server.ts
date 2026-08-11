@@ -10,11 +10,14 @@ interface RestartResult {
   message: string;
 }
 
+type AuthMode = 'bearer' | 'project';
+
 async function callRailwayMutation(
   apiToken: string,
   mutationName: 'serviceInstanceRedeploy' | 'serviceInstanceDeploy',
   serviceId: string,
   environmentId: string,
+  authMode: AuthMode = 'bearer',
 ): Promise<RestartResult> {
   const query = `
     mutation ${mutationName}($serviceId: String!, $environmentId: String!) {
@@ -22,17 +25,22 @@ async function callRailwayMutation(
     }
   `;
 
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (authMode === 'bearer') {
+    headers['Authorization'] = `Bearer ${apiToken}`;
+  } else {
+    headers['Project-Access-Token'] = apiToken;
+  }
+
   const response = await fetch(RAILWAY_API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiToken}`,
-    },
+    headers,
     body: JSON.stringify({
       query,
       variables: { serviceId, environmentId },
     }),
   });
+
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
