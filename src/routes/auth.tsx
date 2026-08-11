@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/browser-client";
-import { lovable } from "@/integrations/lovable/index";
+import { signInWithGoogle } from "@/lib/google-signin";
 import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
 
@@ -69,9 +69,7 @@ function AuthScreen() {
     if (googleBusy) return;
     setGoogleBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
-      });
+      const result = await signInWithGoogle();
       if (result.error) {
         const message = result.error.message ?? "";
         toast.error(
