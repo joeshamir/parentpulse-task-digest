@@ -74,7 +74,7 @@ function GroupsScreen() {
         .order("group_name"),
       supabase
         .from("whatsapp_sessions")
-        .select("status, qr_code_str")
+        .select("status, qr_code_str, updated_at")
         .eq("user_id", user.id)
         .maybeSingle(),
     ]).then(([groupsResult, sessionResult]) => {
@@ -96,6 +96,9 @@ function GroupsScreen() {
       }
       if (sessionResult.data?.status) setConnection(sessionResult.data.status);
       if (sessionResult.data?.qr_code_str) setQrCode(sessionResult.data.qr_code_str);
+      if (sessionResult.data?.updated_at) {
+        setLastSeen(new Date(sessionResult.data.updated_at).getTime());
+      }
     });
 
     const channel = supabase
@@ -109,12 +112,19 @@ function GroupsScreen() {
         "postgres_changes",
         { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setConnection((payload.new as { status?: string }).status ?? "pending_qr");
-          const nextQr = (payload.new as { qr_code_str?: string | null }).qr_code_str ?? null;
+          const row = payload.new as {
+            status?: string;
+            qr_code_str?: string | null;
+            updated_at?: string | null;
+          };
+          setConnection(row.status ?? "pending_qr");
+          const nextQr = row.qr_code_str ?? null;
           setQrCode(nextQr);
+          setLastSeen(row.updated_at ? new Date(row.updated_at).getTime() : Date.now());
           if (nextQr) {
             setAwaitingQrSince(null);
             setQrTimedOut(false);
+            setAutoRetried(false);
           }
         },
       )
@@ -125,12 +135,27 @@ function GroupsScreen() {
     };
   }, [user, t]);
 
-  // If no QR shows up within 30s the worker is probably offline or not redeployed.
+  // Ticks the clock so "last activity" and the offline check stay honest.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // If no QR shows up within 20s, retry once automatically, then give up
+  // and show the offline card instead of spinning forever.
   useEffect(() => {
     if (!awaitingQrSince) return;
-    const timer = setTimeout(() => setQrTimedOut(true), 30_000);
+    const timer = setTimeout(() => {
+      if (!autoRetried) {
+        setAutoRetried(true);
+        void requestReconnect(true);
+      } else {
+        setQrTimedOut(true);
+      }
+    }, 20_000);
     return () => clearTimeout(timer);
-  }, [awaitingQrSince]);
+  }, [awaitingQrSince, autoRetried]);
+
 
   const groups = user
     ? liveGroups.map((group) => ({
