@@ -1,4 +1,4 @@
-import { CalendarPlus, Check, Clock, GraduationCap, PartyPopper, Trophy } from "lucide-react";
+import { Check, Clock, GraduationCap, PartyPopper, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
@@ -73,11 +73,11 @@ export function TaskCard({
         </div>
       </div>
 
-      <div className="mt-3.5 flex items-center gap-2 border-t border-border pt-3">
+      <div className="mt-3.5 border-t border-border pt-3">
         <button
           onClick={onToggle}
           className={cn(
-            "inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-tight transition-colors",
+            "inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-tight transition-colors",
             done
               ? "border border-border text-muted-foreground hover:text-foreground"
               : "bg-primary text-primary-foreground hover:bg-primary/90",
@@ -89,12 +89,6 @@ export function TaskCard({
               ? t({ en: "Completed", he: "הושלם" })
               : t({ en: "Mark Complete", he: "סמן כבוצע" })}
           </span>
-        </button>
-        <button
-          aria-label={t({ en: "Add to Calendar", he: "הוספה ליומן" })}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <CalendarPlus className="h-4 w-4" />
         </button>
       </div>
     </article>
