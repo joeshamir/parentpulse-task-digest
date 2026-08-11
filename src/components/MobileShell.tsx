@@ -16,12 +16,14 @@ export function MobileShell({ children }: { children: ReactNode }) {
     <div dir={dir} className="app-canvas min-h-screen text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 pb-3 pt-5 backdrop-blur-xl">
-          <span className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-2xl bg-primary text-[13px] font-extrabold text-primary-foreground">
-              P
+          <span className="flex items-center gap-2.5" dir="ltr">
+            <span className="relative grid h-9 w-9 place-items-center rounded-[0.9rem] bg-primary text-primary-foreground shadow-[0_8px_18px_-8px_color-mix(in_oklab,var(--color-primary)_80%,transparent)]">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2.5 12.5h4l2-4.5 3.5 8 2.5-5 1.8 3h5.2" />
+              </svg>
             </span>
-            <span className="font-display text-[17px] font-extrabold tracking-tight text-foreground">
-              ParentPulse
+            <span className="text-[17px] font-extrabold leading-none tracking-[-0.01em] text-foreground">
+              Parent<span className="text-primary">Pulse</span>
             </span>
           </span>
           <button
