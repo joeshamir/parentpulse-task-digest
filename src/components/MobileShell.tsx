@@ -37,17 +37,17 @@ export function MobileShell({ children }: { children: ReactNode }) {
 
         <main className="flex-1 pb-28">{children}</main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md border-t border-border bg-background/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
-          <ul className="grid grid-cols-3">
+        <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-background/85 p-1.5 backdrop-blur-md">
             {tabs.map((tab) => (
               <li key={tab.to}>
                 <Link
                   to={tab.to}
                   activeOptions={{ exact: tab.exact }}
-                  className="flex flex-col items-center gap-1 py-2.5 text-muted-foreground transition-colors data-[status=active]:text-foreground"
+                  className="flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-muted-foreground transition-colors data-[status=active]:bg-primary/8 data-[status=active]:text-primary"
                 >
-                  <tab.icon className="h-[18px] w-[18px]" strokeWidth={2} />
-                  <span className="text-[11px] font-semibold tracking-tight">{t(tab.label)}</span>
+                  <tab.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                  <span className="text-[11px] font-medium tracking-tight">{t(tab.label)}</span>
                 </Link>
               </li>
             ))}
