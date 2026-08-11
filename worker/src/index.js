@@ -187,6 +187,21 @@ let reconnectDelay = 2000;
 let qrAttempt = 0;
 let lastReconnectRequestAt = null;
 let reconnectPollInterval;
+let heartbeatInterval;
+let watchdogInterval;
+// Current state as the app should see it, plus when we entered it. Used for
+// the heartbeat (liveness) and the stuck-state watchdog.
+let currentState = 'pending_qr';
+let stateSince = Date.now();
+
+function setConnectionState(next) {
+  if (currentState !== next) {
+    currentState = next;
+    stateSince = Date.now();
+  }
+  setState(next === 'connected' ? 'connected' : next === 'disconnected' ? 'disconnected' : 'pending_qr');
+}
+
 
 async function connect() {
   const authDir = path.resolve(env.authDir);
