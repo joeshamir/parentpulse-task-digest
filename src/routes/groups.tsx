@@ -291,9 +291,12 @@ function GroupsScreen() {
         toast.error(
           t({
             en: body.error || "Could not restart the connector.",
-            he: "לא ניתן להפעיל את המחבר מחדש.",
+            he: body.error
+              ? `לא ניתן להפעיל את המחבר מחדש: ${body.error}`
+              : "לא ניתן להפעיל את המחבר מחדש.",
           }),
         );
+
       }
     } catch {
       toast.error(t({ en: "Network error. Please try again.", he: "שגיאת רשת. אנא נסו שוב." }));

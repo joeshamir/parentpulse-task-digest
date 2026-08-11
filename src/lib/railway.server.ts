@@ -10,11 +10,14 @@ interface RestartResult {
   message: string;
 }
 
+type AuthMode = 'bearer' | 'project';
+
 async function callRailwayMutation(
   apiToken: string,
   mutationName: 'serviceInstanceRedeploy' | 'serviceInstanceDeploy',
   serviceId: string,
   environmentId: string,
+  authMode: AuthMode = 'bearer',
 ): Promise<RestartResult> {
   const query = `
     mutation ${mutationName}($serviceId: String!, $environmentId: String!) {
@@ -22,17 +25,22 @@ async function callRailwayMutation(
     }
   `;
 
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (authMode === 'bearer') {
+    headers['Authorization'] = `Bearer ${apiToken}`;
+  } else {
+    headers['Project-Access-Token'] = apiToken;
+  }
+
   const response = await fetch(RAILWAY_API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiToken}`,
-    },
+    headers,
     body: JSON.stringify({
       query,
       variables: { serviceId, environmentId },
     }),
   });
+
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
@@ -82,18 +90,48 @@ export async function restartRailwayService(options: {
 }): Promise<RestartResult> {
   const { apiToken, serviceId, environmentId } = options;
 
+  const isFieldMissing = (message: string) =>
+    message.toLowerCase().includes('cannot query field') ||
+    message.toLowerCase().includes('unknown field');
+
+  const isAuthError = (message: string) => {
+    const m = message.toLowerCase();
+    return (
+      m.includes('not authorized') ||
+      m.includes('unauthorized') ||
+      m.includes('http 401') ||
+      m.includes('http 403') ||
+      m.includes('forbidden')
+    );
+  };
+
+  async function attempt(authMode: AuthMode): Promise<RestartResult> {
+    const primary = await callRailwayMutation(
+      apiToken,
+      'serviceInstanceRedeploy',
+      serviceId,
+      environmentId,
+      authMode,
+    );
+    if (primary.success || !isFieldMissing(primary.message)) return primary;
+    return callRailwayMutation(apiToken, 'serviceInstanceDeploy', serviceId, environmentId, authMode);
+  }
+
   try {
-    const primary = await callRailwayMutation(apiToken, 'serviceInstanceRedeploy', serviceId, environmentId);
-    if (primary.success) return primary;
+    const bearer = await attempt('bearer');
+    if (bearer.success) return bearer;
 
-    const isFieldMissing =
-      primary.message.toLowerCase().includes('cannot query field') ||
-      primary.message.toLowerCase().includes('unknown field');
+    // Project-scoped Railway tokens must be sent as `Project-Access-Token`
+    // instead of a bearer token; retry with that header before giving up.
+    if (!isAuthError(bearer.message)) return bearer;
 
-    if (!isFieldMissing) return primary;
+    const project = await attempt('project');
+    if (project.success) return project;
 
-    const fallback = await callRailwayMutation(apiToken, 'serviceInstanceDeploy', serviceId, environmentId);
-    return fallback;
+    return {
+      success: false,
+      message: `Railway rejected the request: ${project.message}. The Railway API token may need to be re-issued with account scope.`,
+    };
   } catch (error) {
     return {
       success: false,
@@ -101,4 +139,5 @@ export async function restartRailwayService(options: {
     };
   }
 }
+
 
