@@ -187,8 +187,8 @@
 }
 
 @utility card-soft {
-  border: 1px solid color-mix(in oklab, var(--color-border) 80%, transparent);
+  border: 1px solid color-mix(in oklab, var(--color-border) 35%, transparent);
   background: var(--color-card);
-  box-shadow: 0 1px 2px color-mix(in oklab, var(--color-foreground) 5%, transparent),
-    0 12px 28px -18px color-mix(in oklab, var(--color-primary) 45%, transparent);
+  box-shadow: 0 2px 4px color-mix(in oklab, var(--color-foreground) 3%, transparent),
+    0 18px 40px -24px color-mix(in oklab, var(--color-primary) 55%, transparent);
 }
