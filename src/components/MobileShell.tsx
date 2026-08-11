@@ -1,11 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Inbox, Users } from "lucide-react";
+import { CheckCircle2, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/lang";
 
 const tabs = [
   { to: "/", icon: CheckCircle2, label: { en: "Actions", he: "משימות" }, exact: true },
-  { to: "/digest", icon: Inbox, label: { en: "Digest", he: "תקציר" }, exact: false },
   { to: "/groups", icon: Users, label: { en: "Groups", he: "קבוצות" }, exact: false },
 ] as const;
 
@@ -38,7 +37,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
         <main className="flex-1 pb-28">{children}</main>
 
         <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card/80 p-1.5 shadow-[0_8px_24px_-16px_oklch(0.2_0.05_280/0.5)] backdrop-blur-xl">
+        <ul className="grid grid-cols-2 gap-1 rounded-2xl border border-border bg-card/80 p-1.5 shadow-[0_8px_24px_-16px_oklch(0.2_0.05_280/0.5)] backdrop-blur-xl">
             {tabs.map((tab) => (
               <li key={tab.to}>
                 <Link

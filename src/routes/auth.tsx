@@ -14,7 +14,7 @@ export const Route = createFileRoute("/auth")({
       {
         name: "description",
         content:
-          "Sign in to ParentPulse to sync your WhatsApp parent-group tasks and daily digests across devices.",
+          "Sign in to ParentPulse to sync your WhatsApp parent-group tasks across devices.",
       },
       { property: "og:title", content: "Sign in — ParentPulse" },
       { property: "og:description", content: "Sync your parent-group tasks across devices." },
@@ -105,8 +105,8 @@ function AuthScreen() {
           </h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
             {t({
-              en: "Sync your tasks and digests across devices.",
-              he: "סנכרון המשימות והתקצירים בין המכשירים.",
+              en: "Sync your tasks across devices.",
+              he: "סנכרון המשימות בין המכשירים.",
             })}
           </p>
         </div>
