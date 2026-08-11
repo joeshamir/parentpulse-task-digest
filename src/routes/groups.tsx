@@ -227,23 +227,43 @@ function GroupsScreen() {
               <p className="truncate text-[14px] font-semibold tracking-tight text-card-foreground">
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
-              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", connected ? "text-success" : "text-muted-foreground")}>
-                <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-success" : "bg-warning")} />
+              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", connected ? "text-success" : disconnected ? "text-destructive" : "text-muted-foreground")}>
+                <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-success" : disconnected ? "bg-destructive" : "bg-warning")} />
                 {connected
                   ? t({ en: "Connected", he: "מחובר" })
-                  : t({ en: "Waiting for connection", he: "ממתין לחיבור" })}
+                  : disconnected
+                    ? t({ en: "Disconnected", he: "מנותק" })
+                    : t({ en: "Waiting for QR scan", he: "ממתין לסריקת QR" })}
               </p>
             </div>
             <button
-              onClick={() =>
-                toast(t({ en: "Generating new QR code…", he: "מייצרים קוד QR חדש…" }))
-              }
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              onClick={requestReconnect}
+              disabled={requestingReconnect}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
             >
               <QrCode className="h-3.5 w-3.5" />
-              {t({ en: "Re-scan QR", he: "סריקת QR" })}
+              {requestingReconnect
+                ? t({ en: "Requesting…", he: "מבקשים…" })
+                : t({ en: "Re-scan QR", he: "סריקת QR" })}
             </button>
           </div>
+
+          {showQr && (
+            <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`}
+                alt={t({ en: "WhatsApp pairing QR code", he: "קוד QR לצימוד וואטסאפ" })}
+                className="h-44 w-44 rounded-lg"
+              />
+              <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
+                {t({
+                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code.",
+                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד הזה.",
+                })}
+              </p>
+            </div>
+          )}
+
           <button
             onClick={sendTestTask}
             disabled={testing}
