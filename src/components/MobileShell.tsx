@@ -38,7 +38,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
         <main className="flex-1 pb-28">{children}</main>
 
         <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-background/85 p-1.5 backdrop-blur-md">
+          <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card/85 p-1.5 backdrop-blur-md">>
             {tabs.map((tab) => (
               <li key={tab.to}>
                 <Link
