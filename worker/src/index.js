@@ -285,6 +285,7 @@ async function connect() {
   // Watch for reconnect requests from the app. When the user taps
   // "Re-scan QR", we drop the stored WhatsApp session entirely so Baileys
   // must emit a fresh QR (simply ending the socket would silently re-login).
+  // Polled fast so the QR appears within a couple of seconds.
   if (reconnectPollInterval) clearInterval(reconnectPollInterval);
   reconnectPollInterval = setInterval(async () => {
     if (restarting) return;
@@ -293,8 +294,28 @@ async function connect() {
     if (lastReconnectRequestAt && new Date(requestedAt) <= new Date(lastReconnectRequestAt)) return;
     lastReconnectRequestAt = requestedAt;
     await forceFreshQr();
-  }, 5_000).unref();
+  }, 2_000).unref();
+
+  // Heartbeat: refresh the session row so the app can tell the bridge is
+  // alive (it compares whatsapp_sessions.updated_at against "now").
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(() => {
+    if (restarting) return;
+    void syncGroups([], currentState);
+  }, 15_000).unref();
+
+  // Watchdog: if we never reach "open" (or stay closed) for two minutes,
+  // rebuild the session ourselves so the user never has to redeploy.
+  if (watchdogInterval) clearInterval(watchdogInterval);
+  watchdogInterval = setInterval(() => {
+    if (restarting || shuttingDown) return;
+    if (currentState === 'connected') return;
+    if (Date.now() - stateSince < 120_000) return;
+    console.warn('[whatsapp] stuck in a non-connected state for 2 minutes; self-restarting');
+    void forceFreshQr();
+  }, 20_000).unref();
 }
+
 
 let restarting = false;
 
