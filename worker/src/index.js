@@ -11,7 +11,7 @@ import makeWASocket, {
 
 import { env } from './env.js';
 import { extractTask } from './extract.js';
-import { sendTask, syncGroups } from './ingest.js';
+import { sendTask, syncGroups, getReconnectRequest } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
 import {
   startHealthServer,
