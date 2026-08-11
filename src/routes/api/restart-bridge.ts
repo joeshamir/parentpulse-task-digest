@@ -74,7 +74,17 @@ export const Route = createFileRoute('/api/restart-bridge')({
         }
 
         const result = await restartRailwayService({ apiToken, serviceId, environmentId });
-        return Response.json(result, { status: result.success ? 200 : 502 });
+        if (!result.success) {
+          console.error('[restart-bridge] Railway restart failed:', result.message);
+        }
+        // Always 200: the client reads `success` and shows the message. A non-2xx
+        // here surfaces as an unhandled app runtime error in the preview.
+        return Response.json(
+          result.success
+            ? { success: true, message: result.message }
+            : { success: false, error: result.message },
+          { status: 200 },
+        );
       },
     },
   },
