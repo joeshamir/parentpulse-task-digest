@@ -205,6 +205,22 @@
   }
 }
 
+/* Unlayered so it beats Tailwind's theme layer: Hebrew uses Assistant everywhere,
+   including digits inside display-font elements. */
+[dir="rtl"],
+html[lang="he"],
+html[lang="he"] body {
+  --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Assistant", ui-sans-serif, system-ui, sans-serif;
+}
+
+[dir="rtl"] *,
+html[lang="he"] * {
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-variant-numeric: normal;
+}
+
 @utility app-canvas {
   background:
     radial-gradient(60% 45% at 12% -5%, color-mix(in oklab, var(--color-primary) 16%, transparent), transparent 70%),
