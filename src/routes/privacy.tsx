@@ -5,7 +5,6 @@ import {
   Fingerprint,
   Lock,
   MessageSquareOff,
-  ScanEye,
   Server,
   ShieldCheck,
 } from "lucide-react";
@@ -127,20 +126,6 @@ const copy = {
           "The worker sends data to the app using a signed token. This means random internet traffic cannot post fake tasks into your account.",
         he:
           "ה-worker שולח נתונים לאפליקציה באמצעות אסימון חתום. המשמעות היא שתעבורת אינטרנט אקראית לא יכולה לפרסם משימות מזויפות בחשבון שלכם.",
-      },
-    },
-    {
-      icon: ScanEye,
-      hue: "bg-destructive/15 text-destructive",
-      title: {
-        en: "What you should still trust",
-        he: "על מה עדיין כדאי לשים לב",
-      },
-      body: {
-        en:
-          "The worker must stay running to read messages, and anyone with access to your Railway account or the worker files could theoretically see messages. Keep your Railway account secure and make sure the /data volume is mounted so the session survives restarts.",
-        he:
-          "ה-worker חייב להישאר פעיל כדי לקרוא הודעות, וכל מי שיש לו גישה לחשבון Railway שלכם או לקבצי ה-worker עשוי תאורטית לראות הודעות. שמרו על חשבון Railway מאובטח וודאו שכונן /data מחובר כדי שהסשן ישרוד הפעלות מחדש.",
       },
     },
   ],
