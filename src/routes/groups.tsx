@@ -298,21 +298,49 @@ function GroupsScreen() {
               <p className="truncate text-[14px] font-semibold tracking-tight text-card-foreground">
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
-              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", awaitingQr ? "text-warning" : connected ? "text-success" : disconnected ? "text-destructive" : "text-muted-foreground")}>
-                <span className={cn("h-1.5 w-1.5 rounded-full", awaitingQr ? "animate-pulse bg-warning" : connected ? "bg-success" : disconnected ? "bg-destructive" : "bg-warning")} />
-                {awaitingQr
-                  ? t({ en: "Restarting connection…", he: "מאתחלים את החיבור…" })
-                  : connected
-                  ? t({ en: "Connected", he: "מחובר" })
-                  : disconnected
-                    ? t({ en: "Disconnected", he: "מנותק" })
-                    : t({ en: "Waiting for QR scan", he: "ממתין לסריקת QR" })}
+              <p
+                className={cn(
+                  "mt-0.5 flex items-center gap-1.5 text-[12px] font-medium",
+                  bridgeOffline
+                    ? "text-warning"
+                    : awaitingQr
+                      ? "text-warning"
+                      : live
+                        ? "text-success"
+                        : disconnected
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    bridgeOffline
+                      ? "bg-warning"
+                      : awaitingQr
+                        ? "animate-pulse bg-warning"
+                        : live
+                          ? "bg-success"
+                          : disconnected
+                            ? "bg-destructive"
+                            : "bg-warning",
+                  )}
+                />
+                {bridgeOffline
+                  ? t({ en: "Connector offline", he: "המחבר אינו פעיל" })
+                  : awaitingQr
+                    ? t({ en: "Preparing a new code…", he: "מכינים קוד חדש…" })
+                    : live
+                      ? lastActivity ?? t({ en: "Connected", he: "מחובר" })
+                      : disconnected
+                        ? t({ en: "Disconnected", he: "מנותק" })
+                        : t({ en: "Waiting for scan", he: "ממתין לסריקה" })}
               </p>
             </div>
             <button
-              onClick={requestReconnect}
-              disabled={requestingReconnect}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+              onClick={() => void requestReconnect()}
+              disabled={requestingReconnect || bridgeOffline}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
             >
               <QrCode className="h-3.5 w-3.5" />
               {requestingReconnect
@@ -321,20 +349,46 @@ function GroupsScreen() {
             </button>
           </div>
 
+          {bridgeOffline && (
+            <div className="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4">
+              <p className="flex items-start gap-2 text-[12px] font-semibold leading-relaxed text-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                {t({
+                  en: "Your background connector isn't running, so a new QR can't be created right now.",
+                  he: "המחבר שרץ ברקע אינו פעיל, ולכן לא ניתן ליצור קוד QR כרגע.",
+                })}
+              </p>
+              <button
+                onClick={() => setShowRestartHelp((v) => !v)}
+                className="mt-2 text-[12px] font-semibold text-primary underline underline-offset-2"
+              >
+                {t({ en: "How to restart it", he: "איך להפעיל אותו מחדש" })}
+              </button>
+              {showRestartHelp && (
+                <p className="mt-2 text-[12px] font-medium leading-relaxed text-muted-foreground">
+                  {t({
+                    en: "Open your Railway project, select the ParentPulse worker service and press Restart (or Deploy if it was never updated). It comes back within a minute and this card turns green on its own.",
+                    he: "פתחו את פרויקט Railway, בחרו את שירות ה-worker של ParentPulse ולחצו Restart (או Deploy אם הוא מעולם לא עודכן). הוא חוזר לפעולה תוך דקה והכרטיס הזה יתעדכן לבד.",
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+
           {awaitingQr && (
             <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
                 {t({
-                  en: "Asking the WhatsApp bridge for a fresh QR code. This usually takes 5–15 seconds.",
-                  he: "מבקשים מגשר הוואטסאפ קוד QR חדש. זה לוקח בדרך כלל 5–15 שניות.",
+                  en: "Preparing a new code… this usually takes 2–6 seconds.",
+                  he: "מכינים קוד חדש… זה לוקח בדרך כלל 2–6 שניות.",
                 })}
               </p>
               {qrTimedOut && (
                 <p className="mt-2 text-center text-[12px] font-semibold leading-relaxed text-destructive">
                   {t({
-                    en: "Still nothing — the background worker may be offline or running an old version. Redeploy it and try again.",
-                    he: "עדיין אין קוד — ייתכן שהשירות ברקע כבוי או מריץ גרסה ישנה. פרסו אותו מחדש ונסו שוב.",
+                    en: "Still nothing. The connector may need a restart — see the instructions above.",
+                    he: "עדיין אין קוד. ייתכן שצריך להפעיל את המחבר מחדש — ראו הוראות למעלה.",
                   })}
                 </p>
               )}
@@ -350,10 +404,11 @@ function GroupsScreen() {
               />
               <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
                 {t({
-                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code.",
-                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד הזה.",
+                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code. The code refreshes automatically.",
+                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד. הקוד מתרענן אוטומטית.",
                 })}
               </p>
+
             </div>
           )}
 
