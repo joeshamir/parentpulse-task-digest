@@ -354,9 +354,12 @@ console.log('[boot] ParentPulse worker starting');
 console.log(`[boot] auth dir: ${path.resolve(env.authDir)}`);
 startHealthServer();
 // Treat any pending request as already handled: a boot is a fresh connection.
+// If the app asked for a reconnect while the worker was offline, clear the
+// flag so the worker does not immediately restart right after coming up.
 getReconnectRequest()
   .then(async (requestedAt) => {
     if (!requestedAt) return;
+    console.log('[boot] clearing stale reconnect request from app');
     lastReconnectRequestAt = requestedAt;
     await ackReconnect();
   })
@@ -365,3 +368,4 @@ connect().catch((error) => {
   console.error('[boot] initial connect failed:', error?.stack || error);
   setTimeout(() => connect().catch(() => {}), 5000);
 });
+
