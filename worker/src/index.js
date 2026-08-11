@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import pino from 'pino';
 import qrcode from 'qrcode-terminal';
@@ -11,7 +11,7 @@ import makeWASocket, {
 
 import { env } from './env.js';
 import { extractTask } from './extract.js';
-import { sendTask, syncGroups, getReconnectRequest } from './ingest.js';
+import { sendTask, syncGroups, getReconnectRequest, ackReconnect } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
 import {
   startHealthServer,
@@ -232,10 +232,12 @@ async function connect() {
       void syncGroups([], 'disconnected');
       const code = lastDisconnect?.error?.output?.statusCode;
       if (code === DisconnectReason.loggedOut) {
-        console.error('[whatsapp] logged out — delete the auth volume and re-pair');
+        if (restarting) return;
+        console.error('[whatsapp] logged out — clearing session so a fresh QR is generated');
+        void forceFreshQr();
         return;
       }
-      if (shuttingDown) return;
+      if (shuttingDown || restarting) return;
       console.warn(`[whatsapp] disconnected (${code}); reconnecting in ${reconnectDelay}ms`);
       setTimeout(() => {
         connect().catch((error) => console.error('[whatsapp] reconnect failed:', error.message));
@@ -264,25 +266,59 @@ async function connect() {
   }, 60_000).unref();
 
   // Watch for reconnect requests from the app. When the user taps
-  // "Re-scan QR", we end the socket so Baileys generates a fresh QR.
+  // "Re-scan QR", we drop the stored WhatsApp session entirely so Baileys
+  // must emit a fresh QR (simply ending the socket would silently re-login).
   if (reconnectPollInterval) clearInterval(reconnectPollInterval);
   reconnectPollInterval = setInterval(async () => {
+    if (restarting) return;
     const requestedAt = await getReconnectRequest();
     if (!requestedAt) return;
     if (lastReconnectRequestAt && new Date(requestedAt) <= new Date(lastReconnectRequestAt)) return;
     lastReconnectRequestAt = requestedAt;
-    console.log('[whatsapp] reconnect requested from app; restarting socket for fresh QR');
-    try {
-      socket?.end?.(undefined);
-    } catch {
-      /* ignore */
-    }
+    await forceFreshQr();
   }, 5_000).unref();
+}
+
+let restarting = false;
+
+async function forceFreshQr() {
+  restarting = true;
+  console.log('[whatsapp] reconnect requested from app; clearing session for a fresh QR');
+  // Tell the app immediately so the UI stops showing a stale "Connected".
+  await syncGroups([], 'pending_qr', null, true);
+  try {
+    await socket?.logout?.();
+  } catch (error) {
+    console.warn('[whatsapp] logout failed (continuing):', error?.message);
+  }
+  try {
+    socket?.end?.(undefined);
+  } catch {
+    /* ignore */
+  }
+  socket = undefined;
+  try {
+    rmSync(path.resolve(env.authDir), { recursive: true, force: true });
+  } catch (error) {
+    console.error('[whatsapp] could not clear auth dir:', error?.message);
+  }
+  // Give the old socket a moment to unwind before opening a new one.
+  await new Promise((r) => setTimeout(r, 1500));
+  restarting = false;
+  connect().catch((error) => console.error('[whatsapp] fresh connect failed:', error?.message));
 }
 
 console.log('[boot] ParentPulse worker starting');
 console.log(`[boot] auth dir: ${path.resolve(env.authDir)}`);
 startHealthServer();
+// Treat any pending request as already handled: a boot is a fresh connection.
+getReconnectRequest()
+  .then(async (requestedAt) => {
+    if (!requestedAt) return;
+    lastReconnectRequestAt = requestedAt;
+    await ackReconnect();
+  })
+  .catch(() => {});
 connect().catch((error) => {
   console.error('[boot] initial connect failed:', error?.stack || error);
   setTimeout(() => connect().catch(() => {}), 5000);

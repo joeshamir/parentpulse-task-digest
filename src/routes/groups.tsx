@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlaskConical, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { FlaskConical, Loader2, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -56,6 +56,8 @@ function GroupsScreen() {
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [requestingReconnect, setRequestingReconnect] = useState(false);
+  const [awaitingQrSince, setAwaitingQrSince] = useState<number | null>(null);
+  const [qrTimedOut, setQrTimedOut] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -103,7 +105,12 @@ function GroupsScreen() {
         { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
         (payload) => {
           setConnection((payload.new as { status?: string }).status ?? "pending_qr");
-          setQrCode((payload.new as { qr_code_str?: string | null }).qr_code_str ?? null);
+          const nextQr = (payload.new as { qr_code_str?: string | null }).qr_code_str ?? null;
+          setQrCode(nextQr);
+          if (nextQr) {
+            setAwaitingQrSince(null);
+            setQrTimedOut(false);
+          }
         },
       )
       .subscribe();
@@ -112,6 +119,13 @@ function GroupsScreen() {
       void supabase.removeChannel(channel);
     };
   }, [user, t]);
+
+  // If no QR shows up within 30s the worker is probably offline or not redeployed.
+  useEffect(() => {
+    if (!awaitingQrSince) return;
+    const timer = setTimeout(() => setQrTimedOut(true), 30_000);
+    return () => clearTimeout(timer);
+  }, [awaitingQrSince]);
 
   const groups = user
     ? liveGroups.map((group) => ({
@@ -185,6 +199,8 @@ function GroupsScreen() {
       return;
     }
     setRequestingReconnect(true);
+    setQrTimedOut(false);
+    setQrCode(null);
     const { error } = await supabase
       .from("whatsapp_sessions")
       .upsert(
@@ -196,10 +212,12 @@ function GroupsScreen() {
       toast.error(t({ en: "Could not request reconnect.", he: "לא ניתן לבקש חיבור מחדש." }));
       return;
     }
+    setAwaitingQrSince(Date.now());
     toast.success(t({ en: "Reconnect requested — a fresh QR will appear shortly", he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע בקרוב" }));
   }
 
-  const showQr = connection === "pending_qr" && qrCode;
+  const showQr = Boolean(qrCode) && connection !== "connected";
+  const awaitingQr = Boolean(awaitingQrSince) && !qrCode;
   const disconnected = connection === "disconnected";
 
   return (
@@ -227,9 +245,11 @@ function GroupsScreen() {
               <p className="truncate text-[14px] font-semibold tracking-tight text-card-foreground">
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
-              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", connected ? "text-success" : disconnected ? "text-destructive" : "text-muted-foreground")}>
-                <span className={cn("h-1.5 w-1.5 rounded-full", connected ? "bg-success" : disconnected ? "bg-destructive" : "bg-warning")} />
-                {connected
+              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", awaitingQr ? "text-warning" : connected ? "text-success" : disconnected ? "text-destructive" : "text-muted-foreground")}>
+                <span className={cn("h-1.5 w-1.5 rounded-full", awaitingQr ? "animate-pulse bg-warning" : connected ? "bg-success" : disconnected ? "bg-destructive" : "bg-warning")} />
+                {awaitingQr
+                  ? t({ en: "Restarting connection…", he: "מאתחלים את החיבור…" })
+                  : connected
                   ? t({ en: "Connected", he: "מחובר" })
                   : disconnected
                     ? t({ en: "Disconnected", he: "מנותק" })
@@ -248,10 +268,30 @@ function GroupsScreen() {
             </button>
           </div>
 
+          {awaitingQr && (
+            <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
+                {t({
+                  en: "Asking the WhatsApp bridge for a fresh QR code. This usually takes 5–15 seconds.",
+                  he: "מבקשים מגשר הוואטסאפ קוד QR חדש. זה לוקח בדרך כלל 5–15 שניות.",
+                })}
+              </p>
+              {qrTimedOut && (
+                <p className="mt-2 text-center text-[12px] font-semibold leading-relaxed text-destructive">
+                  {t({
+                    en: "Still nothing — the background worker may be offline or running an old version. Redeploy it and try again.",
+                    he: "עדיין אין קוד — ייתכן שהשירות ברקע כבוי או מריץ גרסה ישנה. פרסו אותו מחדש ונסו שוב.",
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+
           {showQr && (
             <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode)}`}
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode ?? "")}`}
                 alt={t({ en: "WhatsApp pairing QR code", he: "קוד QR לצימוד וואטסאפ" })}
                 className="h-44 w-44 rounded-lg"
               />
