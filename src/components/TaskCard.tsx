@@ -1,18 +1,19 @@
-import { Calendar, Check } from "lucide-react";
+import { CalendarPlus, Check, Clock, GraduationCap, PartyPopper, Trophy } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
 
-const categoryStyles: Record<Task["category"], string> = {
+const tileStyles: Record<Task["category"], string> = {
   school: "bg-school/12 text-school",
   sports: "bg-sports/14 text-sports",
   social: "bg-social/14 text-social",
 };
 
-const railStyles: Record<Task["category"], string> = {
-  school: "bg-school",
-  sports: "bg-sports",
-  social: "bg-social",
+const tileIcons: Record<Task["category"], LucideIcon> = {
+  school: GraduationCap,
+  sports: Trophy,
+  social: PartyPopper,
 };
 
 export function TaskCard({
@@ -25,48 +26,60 @@ export function TaskCard({
   onToggle: () => void;
 }) {
   const { t } = useLang();
+  const Icon = tileIcons[task.category];
 
   return (
     <article
-      className={cn(
-        "card-soft relative overflow-hidden rounded-3xl p-4 ps-5 transition-all",
-        done && "opacity-60",
-      )}
+      className={cn("card-soft rounded-[28px] p-5 transition-all", done && "opacity-60")}
     >
-      <span
-        aria-hidden
-        className={cn("absolute inset-y-3 start-0 w-1 rounded-full", railStyles[task.category])}
-      />
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+            {t(task.source)}
+          </p>
+          <h3
+            className={cn(
+              "mt-2 font-display text-[19px] font-bold leading-snug tracking-tight text-card-foreground",
+              done && "line-through",
+            )}
+          >
+            {t(task.title)}
+          </h3>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
         <span
+          aria-hidden
           className={cn(
-            "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-tight",
-            categoryStyles[task.category],
+            "grid h-11 w-11 shrink-0 place-items-center rounded-2xl",
+            tileStyles[task.category],
           )}
         >
-          {t(task.categoryLabel)}
-        </span>
-        <span
-          className={cn(
-            "rounded-full px-2.5 py-1 text-[11px] font-extrabold tracking-tight",
-            task.urgent ? "bg-peach text-peach-foreground" : "bg-muted text-muted-foreground",
-          )}
-        >
-          {t(task.due)}
+          <Icon className="h-5 w-5" />
         </span>
       </div>
 
-      <h3
-        className={cn(
-          "mt-3 font-display text-[17px] font-bold leading-snug tracking-tight text-card-foreground",
-          done && "line-through",
-        )}
-      >
-        {t(task.title)}
-      </h3>
-
-      <p className="mt-1 text-xs font-semibold text-muted-foreground">{t(task.source)}</p>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          {t(task.due)}
+        </span>
+        <span
+          className={cn(
+            "rounded-full px-2.5 py-1 text-[11px] font-bold",
+            done
+              ? "bg-success/15 text-success"
+              : task.urgent
+                ? "bg-peach text-peach-foreground"
+                : tileStyles[task.category],
+          )}
+        >
+          {done
+            ? t({ en: "Done", he: "בוצע" })
+            : task.urgent
+              ? t({ en: "Urgent", he: "דחוף" })
+              : t(task.categoryLabel)}
+        </span>
+      </div>
 
       <div className="mt-4 flex items-center gap-2">
         <button
@@ -89,7 +102,7 @@ export function TaskCard({
           aria-label={t({ en: "Add to Calendar", he: "הוספה ליומן" })}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground transition-colors hover:bg-muted"
         >
-          <Calendar className="h-[18px] w-[18px]" />
+          <CalendarPlus className="h-[18px] w-[18px]" />
         </button>
       </div>
     </article>
