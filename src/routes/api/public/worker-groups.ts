@@ -11,6 +11,7 @@ const payloadSchema = z.object({
   worker_token: z.string().min(1),
   groups: z.array(groupSchema).max(500).optional(),
   state: z.enum(['pending_qr', 'connected', 'disconnected']).optional(),
+  qr_code: z.string().max(2000).optional(),
 });
 
 const CORS_HEADERS: Record<string, string> = {
@@ -42,16 +43,22 @@ export const Route = createFileRoute('/api/public/worker-groups')({
         if (!userId) return json({ success: false, error: 'unauthorized' }, 401);
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-        const { groups = [], state } = parsed.data;
-        if (state) {
+        const { groups = [], state, qr_code } = parsed.data;
+
+        if (state || qr_code !== undefined) {
+          const sessionUpdate: Record<string, unknown> = {
+            user_id: userId,
+            updated_at: new Date().toISOString(),
+          };
+          if (state) sessionUpdate.status = state;
+          if (qr_code !== undefined) sessionUpdate.qr_code_str = qr_code;
+
           const { error: sessionError } = await supabaseAdmin
             .from('whatsapp_sessions')
-            .upsert(
-              { user_id: userId, status: state, qr_code_str: null, updated_at: new Date().toISOString() },
-              { onConflict: 'user_id' },
-            );
+            .upsert(sessionUpdate, { onConflict: 'user_id' });
           if (sessionError) return json({ success: false, error: 'session sync failed' }, 500);
         }
+
         if (groups.length > 0) {
           // Unique (user_id, group_jid) makes this idempotent under concurrent
           // syncs; ignoreDuplicates keeps existing selections untouched.
@@ -67,13 +74,27 @@ export const Route = createFileRoute('/api/public/worker-groups')({
           if (upsertError) return json({ success: false, error: 'group sync failed' }, 500);
         }
 
-        const { data, error } = await supabaseAdmin
-          .from('tracked_groups')
-          .select('group_jid, group_name, is_tracked')
-          .eq('user_id', userId)
-          .order('group_name');
-        if (error) return json({ success: false, error: 'group list failed' }, 500);
-        return json({ success: true, groups: data ?? [] });
+        const [{ data: groupRows, error: groupError }, { data: sessionRow, error: sessionRowError }] = await Promise.all([
+          supabaseAdmin
+            .from('tracked_groups')
+            .select('group_jid, group_name, is_tracked')
+            .eq('user_id', userId)
+            .order('group_name'),
+          supabaseAdmin
+            .from('whatsapp_sessions')
+            .select('reconnect_requested_at')
+            .eq('user_id', userId)
+            .maybeSingle(),
+        ]);
+
+        if (groupError) return json({ success: false, error: 'group list failed' }, 500);
+        if (sessionRowError) return json({ success: false, error: 'session read failed' }, 500);
+
+        return json({
+          success: true,
+          groups: groupRows ?? [],
+          reconnect_requested_at: sessionRow?.reconnect_requested_at ?? null,
+        });
       },
     },
   },
