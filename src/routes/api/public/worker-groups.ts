@@ -46,7 +46,12 @@ export const Route = createFileRoute('/api/public/worker-groups')({
         const { groups = [], state, qr_code } = parsed.data;
 
         if (state || qr_code !== undefined) {
-          const sessionUpdate: Record<string, unknown> = {
+          const sessionUpdate: {
+            user_id: string;
+            status?: 'pending_qr' | 'connected' | 'disconnected';
+            qr_code_str?: string | null;
+            updated_at: string;
+          } = {
             user_id: userId,
             updated_at: new Date().toISOString(),
           };
