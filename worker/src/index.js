@@ -322,8 +322,12 @@ let restarting = false;
 async function forceFreshQr() {
   restarting = true;
   console.log('[whatsapp] reconnect requested from app; clearing session for a fresh QR');
+  // Reset the watchdog clock so a restart is not immediately retried.
+  setConnectionState('pending_qr');
+  stateSince = Date.now();
   // Tell the app immediately so the UI stops showing a stale "Connected".
   await syncGroups([], 'pending_qr', null, true);
+
   try {
     await socket?.logout?.();
   } catch (error) {
