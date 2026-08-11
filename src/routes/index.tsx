@@ -54,7 +54,7 @@ function ActionsScreen() {
     supabase
       .from("action_items")
       .select("id, group_name, title, category, deadline, is_completed, created_at")
-      .order("deadline", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (cancelled) return;
         setLoading(false);
@@ -77,7 +77,8 @@ function ActionsScreen() {
             }
             const next = payload.new as ActionItemRow;
             const exists = prev.some((r) => r.id === next.id);
-            return exists ? prev.map((r) => (r.id === next.id ? next : r)) : [...prev, next];
+            // Newest tasks go to the top of the feed.
+            return exists ? prev.map((r) => (r.id === next.id ? next : r)) : [next, ...prev];
           });
         },
       )
@@ -106,6 +107,19 @@ function ActionsScreen() {
       toast.error(t({ en: "Could not update the task.", he: "לא ניתן לעדכן את המשימה." }));
     }
   }
+
+  async function deleteTask(row: ActionItemRow) {
+    const snapshot = rows;
+    setRows((prev) => prev.filter((r) => r.id !== row.id));
+    const { error } = await supabase.from("action_items").delete().eq("id", row.id);
+    if (error) {
+      setRows(snapshot);
+      toast.error(t({ en: "Could not delete the task.", he: "לא ניתן למחוק את המשימה." }));
+      return;
+    }
+    toast.success(t({ en: "Task deleted.", he: "המשימה נמחקה." }));
+  }
+
 
   const signedIn = !!user;
   const liveTasks = rows.map(rowToTask);
