@@ -135,15 +135,15 @@ function ActionsScreen() {
           {t({ en: "Today's actions", he: "המשימות של היום" })}
         </h1>
 
-        <div className="mt-4 grid grid-cols-2 divide-x divide-border overflow-hidden rounded-xl border border-border rtl:divide-x-reverse">
+        <div className="mt-4 grid grid-cols-2 divide-x divide-border overflow-hidden rounded-xl border border-border bg-card rtl:divide-x-reverse">
           <div className="px-4 py-3">
-            <p className="text-[22px] font-bold leading-none tracking-tight">{pending}</p>
+            <p className="text-[22px] font-bold leading-none tracking-tight text-primary">{pending}</p>
             <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
               {t({ en: "Open", he: "פתוחות" })}
             </p>
           </div>
           <div className="px-4 py-3">
-            <p className="text-[22px] font-bold leading-none tracking-tight text-muted-foreground">
+            <p className="text-[22px] font-bold leading-none tracking-tight text-primary/70">
               {doneCount}
             </p>
             <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
@@ -160,7 +160,7 @@ function ActionsScreen() {
               className={cn(
                 "shrink-0 rounded-lg border px-3 py-1.5 text-[13px] font-semibold tracking-tight transition-colors",
                 filter === item.key
-                  ? "border-foreground bg-foreground text-background"
+                  ? "border-primary bg-primary text-primary-foreground"
                   : "border-border text-muted-foreground hover:text-foreground",
               )}
             >
