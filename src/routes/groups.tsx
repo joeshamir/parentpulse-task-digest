@@ -42,7 +42,7 @@ function initials(name: string) {
 }
 
 function GroupsScreen() {
-  const { t, lang, toggle } = useLang();
+  const { t, lang, toggle, dir } = useLang();
   const { user, signOut } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
