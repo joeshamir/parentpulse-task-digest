@@ -42,6 +42,19 @@ function formatDeadline(deadline: string | null) {
   return { en: `Due ${fmt("en-GB")}`, he: `עד ${fmt("he-IL")}` };
 }
 
+function formatAdded(createdAt: string) {
+  const d = new Date(createdAt);
+  const fmt = (locale: string) =>
+    d.toLocaleString(locale, {
+      weekday: "short",
+      day: "numeric",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  return { en: `Added ${fmt("en-GB")}`, he: `נוסף ${fmt("he-IL")}` };
+}
+
 export function rowToTask(row: ActionItemRow): Task {
   return {
     id: row.id,
@@ -51,5 +64,6 @@ export function rowToTask(row: ActionItemRow): Task {
     due: formatDeadline(row.deadline),
     urgent: isUrgent(row.deadline) && !row.is_completed,
     source: { en: `From: ${row.group_name}`, he: `מתוך: ${row.group_name}` },
+    added: formatAdded(row.created_at),
   };
 }
