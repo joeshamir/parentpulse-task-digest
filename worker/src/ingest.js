@@ -64,7 +64,7 @@ export async function sendTask({ groupName, title, category, deadline }) {
   return false;
 }
 
-export async function syncGroups(groups = [], state, qrCode) {
+export async function syncGroups(groups = [], state, qrCode, ackReconnect = false) {
   try {
     const payload = {
       worker_token: workerToken(),
@@ -72,6 +72,7 @@ export async function syncGroups(groups = [], state, qrCode) {
       state,
     };
     if (qrCode !== undefined) payload.qr_code = qrCode;
+    if (ackReconnect) payload.ack_reconnect = true;
 
     const res = await fetch(env.groupsUrl, {
       method: 'POST',
@@ -111,4 +112,9 @@ export async function getReconnectRequest() {
     console.error('[groups] reconnect check failed:', error.message);
     return null;
   }
+}
+
+// Clears the pending reconnect request so the worker does not restart in a loop.
+export async function ackReconnect() {
+  await syncGroups([], undefined, undefined, true);
 }

@@ -11,7 +11,9 @@ const payloadSchema = z.object({
   worker_token: z.string().min(1),
   groups: z.array(groupSchema).max(500).optional(),
   state: z.enum(['pending_qr', 'connected', 'disconnected']).optional(),
-  qr_code: z.string().max(2000).optional(),
+  qr_code: z.string().max(2000).nullable().optional(),
+  // Set by the worker once it has acted on a reconnect request.
+  ack_reconnect: z.boolean().optional(),
 });
 
 const CORS_HEADERS: Record<string, string> = {
@@ -43,13 +45,14 @@ export const Route = createFileRoute('/api/public/worker-groups')({
         if (!userId) return json({ success: false, error: 'unauthorized' }, 401);
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-        const { groups = [], state, qr_code } = parsed.data;
+        const { groups = [], state, qr_code, ack_reconnect } = parsed.data;
 
-        if (state || qr_code !== undefined) {
+        if (state || qr_code !== undefined || ack_reconnect) {
           const sessionUpdate: {
             user_id: string;
             status?: 'pending_qr' | 'connected' | 'disconnected';
             qr_code_str?: string | null;
+            reconnect_requested_at?: string | null;
             updated_at: string;
           } = {
             user_id: userId,
@@ -57,6 +60,8 @@ export const Route = createFileRoute('/api/public/worker-groups')({
           };
           if (state) sessionUpdate.status = state;
           if (qr_code !== undefined) sessionUpdate.qr_code_str = qr_code;
+          // Clearing the flag stops the worker from restarting in a loop.
+          if (ack_reconnect) sessionUpdate.reconnect_requested_at = null;
 
           const { error: sessionError } = await supabaseAdmin
             .from('whatsapp_sessions')
