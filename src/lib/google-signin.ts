@@ -22,7 +22,11 @@ function auth() {
 export async function signInWithGoogle(): Promise<SignInResult> {
   const result = (await auth().signInWithOAuth("google", {
     redirect_uri: window.location.origin,
-  })) as SignInResult & { tokens?: { access_token: string; refresh_token: string } };
+  })) as unknown as {
+    redirected?: boolean;
+    error?: { message?: string } | null;
+    tokens?: { access_token: string; refresh_token: string };
+  };
 
   if (result.redirected) return { redirected: true };
   if (result.error) return { error: result.error };
