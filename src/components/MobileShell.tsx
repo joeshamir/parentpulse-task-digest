@@ -17,7 +17,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
       <div className="mx-auto flex min-h-screen w-full max-w-md flex-col border-border bg-background sm:border-x">
         <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-5 py-3.5 backdrop-blur-xl">
           <span className="flex items-center gap-2" dir="ltr">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M2.5 12.5h4l2-4.5 3.5 8 2.5-5 1.8 3h5.2" />
               </svg>
@@ -38,13 +38,13 @@ export function MobileShell({ children }: { children: ReactNode }) {
         <main className="flex-1 pb-28">{children}</main>
 
         <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card/85 p-1.5 backdrop-blur-md">
+          <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card/80 p-1.5 shadow-[0_8px_24px_-16px_oklch(0.2_0.05_280/0.5)] backdrop-blur-xl">
             {tabs.map((tab) => (
               <li key={tab.to}>
                 <Link
                   to={tab.to}
                   activeOptions={{ exact: tab.exact }}
-                  className="flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-muted-foreground transition-colors data-[status=active]:bg-primary/8 data-[status=active]:text-primary"
+                  className="flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-muted-foreground transition-colors data-[status=active]:text-primary"
                 >
                   <tab.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
                   <span className="text-[11px] font-medium tracking-tight">{t(tab.label)}</span>

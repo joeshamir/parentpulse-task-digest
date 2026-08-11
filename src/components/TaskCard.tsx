@@ -32,7 +32,7 @@ export function TaskCard({
       <div className="flex items-start gap-3">
         <span
           aria-hidden
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary"
         >
           <Icon className="h-4 w-4" strokeWidth={2} />
         </span>
@@ -43,7 +43,7 @@ export function TaskCard({
           </p>
           <h3
             className={cn(
-              "mt-1 text-[16px] font-semibold leading-snug tracking-tight text-card-foreground",
+              "mt-1 text-[16px] font-bold leading-snug tracking-tight text-card-foreground",
               done && "text-muted-foreground line-through",
             )}
           >
@@ -56,14 +56,16 @@ export function TaskCard({
               {t(task.due)}
             </span>
             <span className="h-1 w-1 rounded-full bg-border" />
-            <span>{t(task.categoryLabel)}</span>
+            <span className="rounded-md border border-primary/20 bg-primary/8 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+              {t(task.categoryLabel)}
+            </span>
             {!done && task.urgent && (
-              <span className="rounded-md border border-primary/30 bg-primary/8 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+              <span className="rounded-md border border-urgent-border bg-urgent px-1.5 py-0.5 text-[11px] font-semibold text-urgent-foreground">
                 {t({ en: "Urgent", he: "דחוף" })}
               </span>
             )}
             {done && (
-              <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] font-semibold text-foreground">
+              <span className="rounded-md border border-info-border bg-info px-1.5 py-0.5 text-[11px] font-semibold text-info-foreground">
                 {t({ en: "Done", he: "בוצע" })}
               </span>
             )}
@@ -78,7 +80,7 @@ export function TaskCard({
             "inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-tight transition-colors",
             done
               ? "border border-border text-muted-foreground hover:text-foreground"
-              : "bg-foreground text-background hover:opacity-90",
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
           )}
         >
           <Check className="h-4 w-4 shrink-0" />
