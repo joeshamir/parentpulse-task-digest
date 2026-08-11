@@ -52,8 +52,10 @@ function GroupsScreen() {
     Array<{ id: string; jid: string; name: string; members: number; hue: string }>
   >([]);
   const [connection, setConnection] = useState("pending_qr");
+  const [qrCode, setQrCode] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [requestingReconnect, setRequestingReconnect] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -65,7 +67,7 @@ function GroupsScreen() {
         .order("group_name"),
       supabase
         .from("whatsapp_sessions")
-        .select("status")
+        .select("status, qr_code_str")
         .eq("user_id", user.id)
         .maybeSingle(),
     ]).then(([groupsResult, sessionResult]) => {
@@ -86,6 +88,7 @@ function GroupsScreen() {
         setSelected(Object.fromEntries(rows.map((row) => [row.id, row.is_tracked])));
       }
       if (sessionResult.data?.status) setConnection(sessionResult.data.status);
+      if (sessionResult.data?.qr_code_str) setQrCode(sessionResult.data.qr_code_str);
     });
 
     const channel = supabase
@@ -98,7 +101,10 @@ function GroupsScreen() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
-        (payload) => setConnection((payload.new as { status?: string }).status ?? "pending_qr"),
+        (payload) => {
+          setConnection((payload.new as { status?: string }).status ?? "pending_qr");
+          setQrCode((payload.new as { qr_code_str?: string | null }).qr_code_str ?? null);
+        },
       )
       .subscribe();
     return () => {
