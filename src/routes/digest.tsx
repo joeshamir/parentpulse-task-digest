@@ -32,24 +32,24 @@ function DigestScreen() {
 
   return (
     <MobileShell>
-      <header className="px-5 pt-1">
-        <h1 className="font-display text-[30px] font-extrabold leading-tight tracking-tight">
+      <header className="px-5 pt-5">
+        <h1 className="text-[26px] font-bold leading-tight tracking-tight">
           {t({ en: "Digest", he: "תקציר" })}
         </h1>
-        <p className="mt-1 text-sm font-medium text-muted-foreground">
+        <p className="mt-1 text-[13px] font-medium text-muted-foreground">
           {t({
             en: "Updates worth knowing — nothing to do.",
             he: "עדכונים שכדאי לדעת — בלי משימות.",
           })}
         </p>
 
-        <div className="mt-4 grid grid-cols-2 gap-1 rounded-full bg-card/70 p-1 ring-1 ring-border">
+        <div className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border">
           {(["today", "week"] as const).map((key) => (
             <button
               key={key}
               onClick={() => setRange(key)}
               className={cn(
-                "rounded-full py-2 text-[13px] font-bold transition-colors",
+                "py-2 text-[13px] font-semibold tracking-tight transition-colors",
                 range === key
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground",
@@ -62,6 +62,7 @@ function DigestScreen() {
           ))}
         </div>
       </header>
+
 
 
       <section className="mt-4 space-y-3 px-5">
@@ -78,31 +79,30 @@ function SummaryCard({ item }: { item: DigestItem }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <article className="card-soft overflow-hidden rounded-3xl">
+    <article className="overflow-hidden rounded-xl border border-border bg-card">
       <button
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 p-4 text-start"
       >
         <span className="min-w-0">
-          <span className="inline-block rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-accent-foreground">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {t(item.group)} · {t(item.time)}
           </span>
-          <span className="mt-2 block font-display text-[16px] font-bold leading-snug text-card-foreground">
+          <span className="mt-1.5 block text-[15px] font-semibold leading-snug tracking-tight text-card-foreground">
             {t(item.title)}
           </span>
         </span>
         <ChevronDown
           className={cn(
-            "h-8 w-8 shrink-0 rounded-full bg-muted p-2 text-muted-foreground transition-transform",
+            "h-5 w-5 shrink-0 text-muted-foreground transition-transform",
             open && "rotate-180",
           )}
         />
       </button>
       {open && (
-        <p className="border-t border-border px-4 py-3 text-sm font-medium leading-relaxed text-muted-foreground">
+        <p className="border-t border-border px-4 py-3 text-[13px] font-medium leading-relaxed text-muted-foreground">
           {t(item.body)}
-
         </p>
       )}
     </article>
