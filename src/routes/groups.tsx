@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { FlaskConical, Loader2, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { AlertTriangle, FlaskConical, Loader2, QrCode, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -53,11 +53,16 @@ function GroupsScreen() {
   >([]);
   const [connection, setConnection] = useState("pending_qr");
   const [qrCode, setQrCode] = useState<string | null>(null);
+  const [lastSeen, setLastSeen] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [requestingReconnect, setRequestingReconnect] = useState(false);
   const [awaitingQrSince, setAwaitingQrSince] = useState<number | null>(null);
   const [qrTimedOut, setQrTimedOut] = useState(false);
+  const [autoRetried, setAutoRetried] = useState(false);
+  const [showRestartHelp, setShowRestartHelp] = useState(false);
+
 
   useEffect(() => {
     if (!user) return;
@@ -69,7 +74,7 @@ function GroupsScreen() {
         .order("group_name"),
       supabase
         .from("whatsapp_sessions")
-        .select("status, qr_code_str")
+        .select("status, qr_code_str, updated_at")
         .eq("user_id", user.id)
         .maybeSingle(),
     ]).then(([groupsResult, sessionResult]) => {
@@ -91,6 +96,9 @@ function GroupsScreen() {
       }
       if (sessionResult.data?.status) setConnection(sessionResult.data.status);
       if (sessionResult.data?.qr_code_str) setQrCode(sessionResult.data.qr_code_str);
+      if (sessionResult.data?.updated_at) {
+        setLastSeen(new Date(sessionResult.data.updated_at).getTime());
+      }
     });
 
     const channel = supabase
@@ -104,12 +112,19 @@ function GroupsScreen() {
         "postgres_changes",
         { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
         (payload) => {
-          setConnection((payload.new as { status?: string }).status ?? "pending_qr");
-          const nextQr = (payload.new as { qr_code_str?: string | null }).qr_code_str ?? null;
+          const row = payload.new as {
+            status?: string;
+            qr_code_str?: string | null;
+            updated_at?: string | null;
+          };
+          setConnection(row.status ?? "pending_qr");
+          const nextQr = row.qr_code_str ?? null;
           setQrCode(nextQr);
+          setLastSeen(row.updated_at ? new Date(row.updated_at).getTime() : Date.now());
           if (nextQr) {
             setAwaitingQrSince(null);
             setQrTimedOut(false);
+            setAutoRetried(false);
           }
         },
       )
@@ -120,12 +135,27 @@ function GroupsScreen() {
     };
   }, [user, t]);
 
-  // If no QR shows up within 30s the worker is probably offline or not redeployed.
+  // Ticks the clock so "last activity" and the offline check stay honest.
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // If no QR shows up within 20s, retry once automatically, then give up
+  // and show the offline card instead of spinning forever.
   useEffect(() => {
     if (!awaitingQrSince) return;
-    const timer = setTimeout(() => setQrTimedOut(true), 30_000);
+    const timer = setTimeout(() => {
+      if (!autoRetried) {
+        setAutoRetried(true);
+        void requestReconnect(true);
+      } else {
+        setQrTimedOut(true);
+      }
+    }, 20_000);
     return () => clearTimeout(timer);
-  }, [awaitingQrSince]);
+  }, [awaitingQrSince, autoRetried]);
+
 
   const groups = user
     ? liveGroups.map((group) => ({
@@ -193,7 +223,7 @@ function GroupsScreen() {
     toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
   }
 
-  async function requestReconnect() {
+  async function requestReconnect(silent = false) {
     if (!user) {
       toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
       return;
@@ -201,10 +231,12 @@ function GroupsScreen() {
     setRequestingReconnect(true);
     setQrTimedOut(false);
     setQrCode(null);
+    // updated_at is deliberately NOT set here: it is the worker's heartbeat,
+    // and writing it from the app would fake a live bridge.
     const { error } = await supabase
       .from("whatsapp_sessions")
       .upsert(
-        { user_id: user.id, reconnect_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { user_id: user.id, reconnect_requested_at: new Date().toISOString() },
         { onConflict: "user_id" },
       );
     setRequestingReconnect(false);
@@ -213,12 +245,33 @@ function GroupsScreen() {
       return;
     }
     setAwaitingQrSince(Date.now());
-    toast.success(t({ en: "Reconnect requested — a fresh QR will appear shortly", he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע בקרוב" }));
+    if (!silent) {
+      toast.success(
+        t({
+          en: "Reconnect requested — a fresh QR will appear in a few seconds",
+          he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע תוך שניות",
+        }),
+      );
+    }
   }
 
-  const showQr = Boolean(qrCode) && connection !== "connected";
-  const awaitingQr = Boolean(awaitingQrSince) && !qrCode;
-  const disconnected = connection === "disconnected";
+  const bridgeOffline = lastSeen === null || now - lastSeen > 45_000;
+  const showQr = Boolean(qrCode) && connection !== "connected" && !bridgeOffline;
+  const awaitingQr = Boolean(awaitingQrSince) && !qrCode && !bridgeOffline;
+
+  const disconnected = connection === "disconnected" && !bridgeOffline;
+  const live = connected && !bridgeOffline;
+  const secondsSinceSeen = lastSeen ? Math.max(0, Math.round((now - lastSeen) / 1000)) : null;
+  const lastActivity =
+    secondsSinceSeen === null
+      ? null
+      : secondsSinceSeen < 60
+        ? t({ en: "Last activity just now", he: "פעילות אחרונה ממש עכשיו" })
+        : t({
+            en: `Last activity ${Math.round(secondsSinceSeen / 60)} min ago`,
+            he: `פעילות אחרונה לפני ${Math.round(secondsSinceSeen / 60)} דק׳`,
+          });
+
 
   return (
     <MobileShell>
@@ -245,21 +298,49 @@ function GroupsScreen() {
               <p className="truncate text-[14px] font-semibold tracking-tight text-card-foreground">
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
-              <p className={cn("mt-0.5 flex items-center gap-1.5 text-[12px] font-medium", awaitingQr ? "text-warning" : connected ? "text-success" : disconnected ? "text-destructive" : "text-muted-foreground")}>
-                <span className={cn("h-1.5 w-1.5 rounded-full", awaitingQr ? "animate-pulse bg-warning" : connected ? "bg-success" : disconnected ? "bg-destructive" : "bg-warning")} />
-                {awaitingQr
-                  ? t({ en: "Restarting connection…", he: "מאתחלים את החיבור…" })
-                  : connected
-                  ? t({ en: "Connected", he: "מחובר" })
-                  : disconnected
-                    ? t({ en: "Disconnected", he: "מנותק" })
-                    : t({ en: "Waiting for QR scan", he: "ממתין לסריקת QR" })}
+              <p
+                className={cn(
+                  "mt-0.5 flex items-center gap-1.5 text-[12px] font-medium",
+                  bridgeOffline
+                    ? "text-warning"
+                    : awaitingQr
+                      ? "text-warning"
+                      : live
+                        ? "text-success"
+                        : disconnected
+                          ? "text-destructive"
+                          : "text-muted-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    bridgeOffline
+                      ? "bg-warning"
+                      : awaitingQr
+                        ? "animate-pulse bg-warning"
+                        : live
+                          ? "bg-success"
+                          : disconnected
+                            ? "bg-destructive"
+                            : "bg-warning",
+                  )}
+                />
+                {bridgeOffline
+                  ? t({ en: "Connector offline", he: "המחבר אינו פעיל" })
+                  : awaitingQr
+                    ? t({ en: "Preparing a new code…", he: "מכינים קוד חדש…" })
+                    : live
+                      ? lastActivity ?? t({ en: "Connected", he: "מחובר" })
+                      : disconnected
+                        ? t({ en: "Disconnected", he: "מנותק" })
+                        : t({ en: "Waiting for scan", he: "ממתין לסריקה" })}
               </p>
             </div>
             <button
-              onClick={requestReconnect}
-              disabled={requestingReconnect}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+              onClick={() => void requestReconnect()}
+              disabled={requestingReconnect || bridgeOffline}
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
             >
               <QrCode className="h-3.5 w-3.5" />
               {requestingReconnect
@@ -268,20 +349,46 @@ function GroupsScreen() {
             </button>
           </div>
 
+          {bridgeOffline && (
+            <div className="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4">
+              <p className="flex items-start gap-2 text-[12px] font-semibold leading-relaxed text-foreground">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                {t({
+                  en: "Your background connector isn't running, so a new QR can't be created right now.",
+                  he: "המחבר שרץ ברקע אינו פעיל, ולכן לא ניתן ליצור קוד QR כרגע.",
+                })}
+              </p>
+              <button
+                onClick={() => setShowRestartHelp((v) => !v)}
+                className="mt-2 text-[12px] font-semibold text-primary underline underline-offset-2"
+              >
+                {t({ en: "How to restart it", he: "איך להפעיל אותו מחדש" })}
+              </button>
+              {showRestartHelp && (
+                <p className="mt-2 text-[12px] font-medium leading-relaxed text-muted-foreground">
+                  {t({
+                    en: "Open your Railway project, select the ParentPulse worker service and press Restart (or Deploy if it was never updated). It comes back within a minute and this card turns green on its own.",
+                    he: "פתחו את פרויקט Railway, בחרו את שירות ה-worker של ParentPulse ולחצו Restart (או Deploy אם הוא מעולם לא עודכן). הוא חוזר לפעולה תוך דקה והכרטיס הזה יתעדכן לבד.",
+                  })}
+                </p>
+              )}
+            </div>
+          )}
+
           {awaitingQr && (
             <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
                 {t({
-                  en: "Asking the WhatsApp bridge for a fresh QR code. This usually takes 5–15 seconds.",
-                  he: "מבקשים מגשר הוואטסאפ קוד QR חדש. זה לוקח בדרך כלל 5–15 שניות.",
+                  en: "Preparing a new code… this usually takes 2–6 seconds.",
+                  he: "מכינים קוד חדש… זה לוקח בדרך כלל 2–6 שניות.",
                 })}
               </p>
               {qrTimedOut && (
                 <p className="mt-2 text-center text-[12px] font-semibold leading-relaxed text-destructive">
                   {t({
-                    en: "Still nothing — the background worker may be offline or running an old version. Redeploy it and try again.",
-                    he: "עדיין אין קוד — ייתכן שהשירות ברקע כבוי או מריץ גרסה ישנה. פרסו אותו מחדש ונסו שוב.",
+                    en: "Still nothing. The connector may need a restart — see the instructions above.",
+                    he: "עדיין אין קוד. ייתכן שצריך להפעיל את המחבר מחדש — ראו הוראות למעלה.",
                   })}
                 </p>
               )}
@@ -297,10 +404,11 @@ function GroupsScreen() {
               />
               <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
                 {t({
-                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code.",
-                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד הזה.",
+                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code. The code refreshes automatically.",
+                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד. הקוד מתרענן אוטומטית.",
                 })}
               </p>
+
             </div>
           )}
 

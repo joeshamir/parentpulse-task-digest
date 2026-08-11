@@ -47,7 +47,10 @@ export const Route = createFileRoute('/api/public/worker-groups')({
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
         const { groups = [], state, qr_code, ack_reconnect } = parsed.data;
 
-        if (state || qr_code !== undefined || ack_reconnect) {
+        // Always touch the session row: updated_at doubles as the worker
+        // heartbeat the app uses to tell whether the bridge is alive.
+        {
+
           const sessionUpdate: {
             user_id: string;
             status?: 'pending_qr' | 'connected' | 'disconnected';

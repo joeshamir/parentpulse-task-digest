@@ -187,6 +187,21 @@ let reconnectDelay = 2000;
 let qrAttempt = 0;
 let lastReconnectRequestAt = null;
 let reconnectPollInterval;
+let heartbeatInterval;
+let watchdogInterval;
+// Current state as the app should see it, plus when we entered it. Used for
+// the heartbeat (liveness) and the stuck-state watchdog.
+let currentState = 'pending_qr';
+let stateSince = Date.now();
+
+function setConnectionState(next) {
+  if (currentState !== next) {
+    currentState = next;
+    stateSince = Date.now();
+  }
+  setState(next === 'connected' ? 'connected' : next === 'disconnected' ? 'disconnected' : 'pending_qr');
+}
+
 
 async function connect() {
   const authDir = path.resolve(env.authDir);
@@ -210,6 +225,7 @@ async function connect() {
     if (qr) {
       qrAttempt += 1;
       markQr();
+      setConnectionState('pending_qr');
       void syncGroups([], 'pending_qr', qr);
       console.log(`\n[whatsapp] ===== QR #${qrAttempt} (use the NEWEST one) =====`);
       console.log('[whatsapp] Easiest: open this link in your browser and scan the image:');
@@ -223,13 +239,14 @@ async function connect() {
     }
     if (connection === 'open') {
       reconnectDelay = 2000;
-      setState('connected');
+      setConnectionState('connected');
       console.log('[whatsapp] connected');
       void refreshGroups(socket);
     }
     if (connection === 'close') {
-      setState('disconnected');
+      setConnectionState('disconnected');
       void syncGroups([], 'disconnected');
+
       const code = lastDisconnect?.error?.output?.statusCode;
       if (code === DisconnectReason.loggedOut) {
         if (restarting) return;
@@ -268,6 +285,7 @@ async function connect() {
   // Watch for reconnect requests from the app. When the user taps
   // "Re-scan QR", we drop the stored WhatsApp session entirely so Baileys
   // must emit a fresh QR (simply ending the socket would silently re-login).
+  // Polled fast so the QR appears within a couple of seconds.
   if (reconnectPollInterval) clearInterval(reconnectPollInterval);
   reconnectPollInterval = setInterval(async () => {
     if (restarting) return;
@@ -276,16 +294,40 @@ async function connect() {
     if (lastReconnectRequestAt && new Date(requestedAt) <= new Date(lastReconnectRequestAt)) return;
     lastReconnectRequestAt = requestedAt;
     await forceFreshQr();
-  }, 5_000).unref();
+  }, 2_000).unref();
+
+  // Heartbeat: refresh the session row so the app can tell the bridge is
+  // alive (it compares whatsapp_sessions.updated_at against "now").
+  if (heartbeatInterval) clearInterval(heartbeatInterval);
+  heartbeatInterval = setInterval(() => {
+    if (restarting) return;
+    void syncGroups([], currentState);
+  }, 15_000).unref();
+
+  // Watchdog: if we never reach "open" (or stay closed) for two minutes,
+  // rebuild the session ourselves so the user never has to redeploy.
+  if (watchdogInterval) clearInterval(watchdogInterval);
+  watchdogInterval = setInterval(() => {
+    if (restarting || shuttingDown) return;
+    if (currentState === 'connected') return;
+    if (Date.now() - stateSince < 120_000) return;
+    console.warn('[whatsapp] stuck in a non-connected state for 2 minutes; self-restarting');
+    void forceFreshQr();
+  }, 20_000).unref();
 }
+
 
 let restarting = false;
 
 async function forceFreshQr() {
   restarting = true;
   console.log('[whatsapp] reconnect requested from app; clearing session for a fresh QR');
+  // Reset the watchdog clock so a restart is not immediately retried.
+  setConnectionState('pending_qr');
+  stateSince = Date.now();
   // Tell the app immediately so the UI stops showing a stale "Connected".
   await syncGroups([], 'pending_qr', null, true);
+
   try {
     await socket?.logout?.();
   } catch (error) {
