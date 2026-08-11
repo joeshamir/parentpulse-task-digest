@@ -5,7 +5,6 @@ import {
   Fingerprint,
   Lock,
   MessageSquareOff,
-  ScanEye,
   Server,
   ShieldCheck,
 } from "lucide-react";
