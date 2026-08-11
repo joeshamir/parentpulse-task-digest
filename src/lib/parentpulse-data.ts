@@ -8,6 +8,7 @@ export type Task = {
   due: { en: string; he: string };
   urgent: boolean;
   source: { en: string; he: string };
+  added?: { en: string; he: string };
 };
 
 export const categoryFilters: {
