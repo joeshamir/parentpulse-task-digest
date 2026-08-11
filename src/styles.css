@@ -202,6 +202,7 @@
   [dir="rtl"] p,
   html[lang="he"] p {
     line-height: 1.6;
+  }
 }
 
 /* Unlayered so it beats Tailwind's theme layer: Hebrew uses Assistant everywhere,
@@ -218,7 +219,6 @@ html[lang="he"] * {
   font-family: var(--font-sans);
   letter-spacing: normal;
   font-variant-numeric: normal;
-}
 }
 
 @utility app-canvas {
