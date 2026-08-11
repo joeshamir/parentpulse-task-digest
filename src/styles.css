@@ -177,6 +177,32 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Hebrew / RTL: Assistant everywhere, with typography tuned for Hebrew. */
+  [dir="rtl"],
+  html[lang="he"] {
+    --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Assistant", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  [dir="rtl"] *,
+  html[lang="he"] * {
+    letter-spacing: normal;
+  }
+
+  [dir="rtl"] h1,
+  [dir="rtl"] h2,
+  [dir="rtl"] h3,
+  html[lang="he"] h1,
+  html[lang="he"] h2,
+  html[lang="he"] h3 {
+    line-height: 1.35;
+  }
+
+  [dir="rtl"] p,
+  html[lang="he"] p {
+    line-height: 1.6;
+  }
 }
 
 @utility app-canvas {
