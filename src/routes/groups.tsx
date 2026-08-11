@@ -179,7 +179,28 @@ function GroupsScreen() {
     toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
   }
 
+  async function requestReconnect() {
+    if (!user) {
+      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      return;
+    }
+    setRequestingReconnect(true);
+    const { error } = await supabase
+      .from("whatsapp_sessions")
+      .upsert(
+        { user_id: user.id, reconnect_requested_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        { onConflict: "user_id" },
+      );
+    setRequestingReconnect(false);
+    if (error) {
+      toast.error(t({ en: "Could not request reconnect.", he: "לא ניתן לבקש חיבור מחדש." }));
+      return;
+    }
+    toast.success(t({ en: "Reconnect requested — a fresh QR will appear shortly", he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע בקרוב" }));
+  }
 
+  const showQr = connection === "pending_qr" && qrCode;
+  const disconnected = connection === "disconnected";
 
   return (
     <MobileShell>
