@@ -42,7 +42,7 @@ function initials(name: string) {
 }
 
 function GroupsScreen() {
-  const { t, lang, toggle } = useLang();
+  const { t, lang, toggle, dir } = useLang();
   const { user, signOut } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
@@ -348,6 +348,22 @@ function GroupsScreen() {
             </Link>
           )}
         </div>
+        <Link
+          to="/privacy"
+          className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 card-soft rounded-3xl p-4 transition-colors hover:bg-accent"
+        >
+          <span className="flex min-w-0 items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <span className="text-[15px] font-bold text-card-foreground">
+              {t({ en: "Privacy & Security", he: "פרטיות ואבטחה" })}
+            </span>
+          </span>
+          <span className="text-xs font-bold text-muted-foreground">
+            {dir === "rtl" ? "←" : "→"}
+          </span>
+        </Link>
       </section>
 
       {/* Sticky save */}
