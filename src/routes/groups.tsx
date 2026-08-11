@@ -265,7 +265,7 @@ function GroupsScreen() {
                 key={group.id}
                 className={cn(
                   "card-soft grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-3xl p-4 transition-colors",
-                  on && "bg-primary/[0.06] ring-1 ring-primary/25",
+                  on && "bg-primary/[0.05]",
                 )}
               >
                 <span
