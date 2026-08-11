@@ -14,40 +14,40 @@ export function MobileShell({ children }: { children: ReactNode }) {
 
   return (
     <div dir={dir} className="app-canvas min-h-screen text-foreground">
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col">
-        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-5 pb-3 pt-5 backdrop-blur-xl">
-          <span className="flex items-center gap-2.5" dir="ltr">
-            <span className="relative grid h-9 w-9 place-items-center rounded-[0.9rem] bg-primary text-primary-foreground shadow-[0_8px_18px_-8px_color-mix(in_oklab,var(--color-primary)_80%,transparent)]">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col border-border bg-background sm:border-x">
+        <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/85 px-5 py-3.5 backdrop-blur-xl">
+          <span className="flex items-center gap-2" dir="ltr">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-foreground text-background">
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M2.5 12.5h4l2-4.5 3.5 8 2.5-5 1.8 3h5.2" />
               </svg>
             </span>
-            <span className="text-[17px] font-extrabold leading-none tracking-[-0.01em] text-foreground">
-              Parent<span className="text-primary">Pulse</span>
+            <span className="text-[15px] font-bold leading-none tracking-tight text-foreground">
+              ParentPulse
             </span>
           </span>
           <button
             onClick={toggle}
-            className="shrink-0 rounded-full bg-card/70 px-3 py-1.5 text-xs font-bold text-muted-foreground ring-1 ring-border transition-colors hover:text-foreground"
+            className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-foreground/30 hover:text-foreground"
             aria-label="Toggle language"
           >
             {lang === "en" ? "עברית" : "English"}
           </button>
         </div>
 
-        <main className="flex-1 pb-32">{children}</main>
+        <main className="flex-1 pb-28">{children}</main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <ul className="grid grid-cols-3 gap-1 rounded-[1.75rem] bg-card/90 p-1.5 shadow-[0_18px_40px_-18px_color-mix(in_oklab,var(--color-foreground)_45%,transparent)] ring-1 ring-border backdrop-blur-xl">
+        <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md border-t border-border bg-background/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl">
+          <ul className="grid grid-cols-3">
             {tabs.map((tab) => (
               <li key={tab.to}>
                 <Link
                   to={tab.to}
                   activeOptions={{ exact: tab.exact }}
-                  className="flex flex-col items-center gap-1 rounded-[1.4rem] py-2.5 text-muted-foreground transition-all data-[status=active]:bg-primary data-[status=active]:text-primary-foreground"
+                  className="flex flex-col items-center gap-1 py-2.5 text-muted-foreground transition-colors data-[status=active]:text-foreground"
                 >
-                  <tab.icon className="h-[18px] w-[18px]" />
-                  <span className="text-[11px] font-bold">{t(tab.label)}</span>
+                  <tab.icon className="h-[18px] w-[18px]" strokeWidth={2} />
+                  <span className="text-[11px] font-semibold tracking-tight">{t(tab.label)}</span>
                 </Link>
               </li>
             ))}

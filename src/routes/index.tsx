@@ -127,29 +127,30 @@ function ActionsScreen() {
   return (
     <MobileShell>
       <InstallBanner />
-      <header className="px-5 pt-1">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-muted-foreground">
+      <header className="px-5 pt-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           {today}
         </p>
-        <h1 className="mt-1.5 font-display text-[30px] font-extrabold leading-tight tracking-tight">
+        <h1 className="mt-1 text-[26px] font-bold leading-tight tracking-tight">
           {t({ en: "Today's actions", he: "המשימות של היום" })}
         </h1>
 
-        <div className="card-soft mt-4 flex items-center justify-between gap-4 rounded-3xl p-4">
-          <div className="min-w-0">
-            <p className="font-display text-3xl font-extrabold leading-none">{pending}</p>
-            <p className="mt-1.5 text-[13px] font-semibold text-muted-foreground">
-              {t({ en: "still open across your groups", he: "עדיין פתוחות בקבוצות שלך" })}
+        <div className="mt-4 grid grid-cols-2 divide-x divide-border overflow-hidden rounded-xl border border-border rtl:divide-x-reverse">
+          <div className="px-4 py-3">
+            <p className="text-[22px] font-bold leading-none tracking-tight">{pending}</p>
+            <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
+              {t({ en: "Open", he: "פתוחות" })}
             </p>
           </div>
-          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-3xl bg-peach text-center text-peach-foreground">
-            <span className="font-display text-lg font-extrabold leading-none">{doneCount}</span>
-            <span className="mt-0.5 text-[10px] font-bold uppercase tracking-wide">
-              {t({ en: "done", he: "בוצעו" })}
-            </span>
-          </span>
+          <div className="px-4 py-3">
+            <p className="text-[22px] font-bold leading-none tracking-tight text-muted-foreground">
+              {doneCount}
+            </p>
+            <p className="mt-1.5 text-[12px] font-medium text-muted-foreground">
+              {t({ en: "Completed", he: "הושלמו" })}
+            </p>
+          </div>
         </div>
-
 
         <div className="-mx-5 mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {categoryFilters.map((item) => (
@@ -157,10 +158,10 @@ function ActionsScreen() {
               key={item.key}
               onClick={() => setFilter(item.key)}
               className={cn(
-                "shrink-0 rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
+                "shrink-0 rounded-lg border px-3 py-1.5 text-[13px] font-semibold tracking-tight transition-colors",
                 filter === item.key
-                  ? "bg-foreground text-background"
-                  : "bg-card/70 text-muted-foreground ring-1 ring-border hover:text-foreground",
+                  ? "border-foreground bg-foreground text-background"
+                  : "border-border text-muted-foreground hover:text-foreground",
               )}
             >
               {t(item.label)}
@@ -174,11 +175,11 @@ function ActionsScreen() {
         <div className="mt-4 px-5">
           <Link
             to="/auth"
-            className="flex items-center gap-3 rounded-3xl bg-primary/8 p-4 ring-1 ring-primary/20"
+            className="flex items-center gap-3 rounded-xl border border-border p-3.5 transition-colors hover:border-foreground/25"
           >
-            <LogIn className="h-5 w-5 shrink-0 text-primary" />
-            <span className="min-w-0 text-sm">
-              <span className="block font-bold text-foreground">
+            <LogIn className="h-4 w-4 shrink-0 text-primary" />
+            <span className="min-w-0 text-[13px]">
+              <span className="block font-semibold tracking-tight text-foreground">
                 {t({ en: "You're viewing a demo feed", he: "אתם צופים בפיד לדוגמה" })}
               </span>
               <span className="block text-muted-foreground">

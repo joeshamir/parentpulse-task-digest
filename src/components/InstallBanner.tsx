@@ -34,10 +34,10 @@ export function InstallBanner() {
   }
 
   return (
-    <div className="px-5 pt-3">
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-accent/60 px-4 py-3">
+    <div className="px-5 pt-4">
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-border px-4 py-3">
         <Share className="h-4 w-4 shrink-0 text-primary" />
-        <p className="min-w-0 text-[13px] leading-snug text-foreground">
+        <p className="min-w-0 text-[13px] leading-snug text-muted-foreground">
           {t({
             en: "Tap Share → Add to Home Screen to install ParentPulse.",
             he: "הקישו שיתוף ← הוספה למסך הבית כדי להתקין את ParentPulse.",
@@ -46,7 +46,7 @@ export function InstallBanner() {
         <button
           onClick={dismiss}
           aria-label={t({ en: "Dismiss", he: "סגירה" })}
-          className="shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+          className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </button>

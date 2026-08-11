@@ -4,12 +4,6 @@ import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
 
-const tileStyles: Record<Task["category"], string> = {
-  school: "bg-school/12 text-school",
-  sports: "bg-sports/14 text-sports",
-  social: "bg-social/14 text-social",
-};
-
 const tileIcons: Record<Task["category"], LucideIcon> = {
   school: GraduationCap,
   sports: Trophy,
@@ -30,65 +24,61 @@ export function TaskCard({
 
   return (
     <article
-      className={cn("card-soft rounded-[28px] p-5 transition-all", done && "opacity-60")}
+      className={cn(
+        "rounded-xl border border-border bg-card p-4 transition-colors",
+        done && "bg-muted/40",
+      )}
     >
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-        <div className="min-w-0">
-          <p className="truncate text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground"
+        >
+          <Icon className="h-4 w-4" strokeWidth={2} />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             {t(task.source)}
           </p>
           <h3
             className={cn(
-              "mt-2 font-display text-[19px] font-bold leading-snug tracking-tight text-card-foreground",
-              done && "line-through",
+              "mt-1 text-[16px] font-semibold leading-snug tracking-tight text-card-foreground",
+              done && "text-muted-foreground line-through",
             )}
           >
             {t(task.title)}
           </h3>
+
+          <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              {t(task.due)}
+            </span>
+            <span className="h-1 w-1 rounded-full bg-border" />
+            <span>{t(task.categoryLabel)}</span>
+            {!done && task.urgent && (
+              <span className="rounded-md border border-primary/30 bg-primary/8 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+                {t({ en: "Urgent", he: "דחוף" })}
+              </span>
+            )}
+            {done && (
+              <span className="rounded-md border border-border px-1.5 py-0.5 text-[11px] font-semibold text-foreground">
+                {t({ en: "Done", he: "בוצע" })}
+              </span>
+            )}
+          </div>
         </div>
-
-        <span
-          aria-hidden
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-2xl",
-            tileStyles[task.category],
-          )}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" />
-          {t(task.due)}
-        </span>
-        <span
-          className={cn(
-            "rounded-full px-2.5 py-1 text-[11px] font-bold",
-            done
-              ? "bg-success/15 text-success"
-              : task.urgent
-                ? "bg-peach text-peach-foreground"
-                : tileStyles[task.category],
-          )}
-        >
-          {done
-            ? t({ en: "Done", he: "בוצע" })
-            : task.urgent
-              ? t({ en: "Urgent", he: "דחוף" })
-              : t(task.categoryLabel)}
-        </span>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-3.5 flex items-center gap-2 border-t border-border pt-3">
         <button
           onClick={onToggle}
           className={cn(
-            "inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-[13px] font-bold transition-colors",
+            "inline-flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-semibold tracking-tight transition-colors",
             done
-              ? "bg-success text-success-foreground"
-              : "bg-primary text-primary-foreground hover:bg-primary/90",
+              ? "border border-border text-muted-foreground hover:text-foreground"
+              : "bg-foreground text-background hover:opacity-90",
           )}
         >
           <Check className="h-4 w-4 shrink-0" />
@@ -100,9 +90,9 @@ export function TaskCard({
         </button>
         <button
           aria-label={t({ en: "Add to Calendar", he: "הוספה ליומן" })}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-accent text-accent-foreground transition-colors hover:bg-muted"
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground transition-colors hover:text-foreground"
         >
-          <CalendarPlus className="h-[18px] w-[18px]" />
+          <CalendarPlus className="h-4 w-4" />
         </button>
       </div>
     </article>

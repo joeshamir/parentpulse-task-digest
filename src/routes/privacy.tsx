@@ -136,57 +136,51 @@ function PrivacyScreen() {
 
   return (
     <MobileShell>
-      <header className="px-5 pt-1">
+      <header className="px-5 pt-5">
         <Link
           to="/groups"
           className={cn(
-            "inline-flex items-center gap-1 text-xs font-bold text-muted-foreground transition-colors hover:text-foreground",
+            "inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground",
             dir === "rtl" && "flex-row-reverse",
           )}
         >
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-3.5 w-3.5" />
           {t(copy.back)}
         </Link>
-        <h1 className="mt-3 font-display text-[30px] font-extrabold leading-tight tracking-tight">
+        <h1 className="mt-3 text-[26px] font-bold leading-tight tracking-tight">
           {t(copy.title)}
         </h1>
-        <p className="mt-1 text-sm font-medium text-muted-foreground">
+        <p className="mt-1 text-[13px] font-medium text-muted-foreground">
           {t(copy.subtitle)}
         </p>
       </header>
 
-      <section className="mt-5 space-y-3 px-5">
-        {copy.sections.map((section, i) => (
-          <article
-            key={i}
-            className="card-soft rounded-3xl p-4"
-          >
-            <div className="flex items-start gap-3">
-              <span
-                className={cn(
-                  "grid h-10 w-10 shrink-0 place-items-center rounded-2xl",
-                  section.hue,
-                )}
-              >
-                <section.icon className="h-5 w-5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <h2 className="text-[15px] font-bold text-card-foreground">
-                  {t(section.title)}
-                </h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-                  {t(section.body)}
-                </p>
+      <section className="mt-5 px-5">
+        <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+          {copy.sections.map((section, i) => (
+            <article key={i} className="p-4">
+              <div className="flex items-start gap-3">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                  <section.icon className="h-4 w-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-[14px] font-semibold tracking-tight text-card-foreground">
+                    {t(section.title)}
+                  </h2>
+                  <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground">
+                    {t(section.body)}
+                  </p>
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          ))}
+        </div>
       </section>
 
-      <section className="mt-6 px-5 pb-8">
-        <div className="flex items-center gap-3 rounded-3xl bg-primary/5 p-4 ring-1 ring-primary/15">
-          <ShieldCheck className="h-6 w-6 shrink-0 text-primary" />
-          <p className="text-sm font-semibold text-primary">
+      <section className="mt-4 px-5 pb-8">
+        <div className="flex items-center gap-3 rounded-xl border border-border p-4">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-primary" />
+          <p className="text-[13px] font-medium text-muted-foreground">
             {t({
               en: "Questions? Contact us through the app feedback channel.",
               he: "שאלות? צרו קשר דרך ערוץ המשוב של האפליקציה.",
