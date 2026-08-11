@@ -64,16 +64,19 @@ export async function sendTask({ groupName, title, category, deadline }) {
   return false;
 }
 
-export async function syncGroups(groups = [], state) {
+export async function syncGroups(groups = [], state, qrCode) {
   try {
+    const payload = {
+      worker_token: workerToken(),
+      groups,
+      state,
+    };
+    if (qrCode !== undefined) payload.qr_code = qrCode;
+
     const res = await fetch(env.groupsUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        worker_token: workerToken(),
-        groups,
-        state,
-      }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       console.error(`[groups] sync rejected (${res.status})`);
@@ -83,6 +86,29 @@ export async function syncGroups(groups = [], state) {
     return Array.isArray(body.groups) ? body.groups : [];
   } catch (error) {
     console.error('[groups] sync failed:', error.message);
+    return null;
+  }
+}
+
+// Reads the reconnect_request timestamp from the app's whatsapp_sessions row.
+// Returns an ISO timestamp string if a reconnect was requested, or null.
+export async function getReconnectRequest() {
+  try {
+    const res = await fetch(env.groupsUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        worker_token: workerToken(),
+      }),
+    });
+    if (!res.ok) {
+      console.error(`[groups] reconnect check rejected (${res.status})`);
+      return null;
+    }
+    const body = await res.json();
+    return body.reconnect_requested_at || null;
+  } catch (error) {
+    console.error('[groups] reconnect check failed:', error.message);
     return null;
   }
 }
