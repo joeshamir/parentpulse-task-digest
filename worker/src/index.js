@@ -185,6 +185,8 @@ async function refreshGroups(sock, state = 'connected') {
 // --- Connection --------------------------------------------------------
 let reconnectDelay = 2000;
 let qrAttempt = 0;
+let lastReconnectRequestAt = null;
+let reconnectPollInterval;
 
 async function connect() {
   const authDir = path.resolve(env.authDir);
@@ -208,7 +210,7 @@ async function connect() {
     if (qr) {
       qrAttempt += 1;
       markQr();
-      void syncGroups([], 'pending_qr');
+      void syncGroups([], 'pending_qr', qr);
       console.log(`\n[whatsapp] ===== QR #${qrAttempt} (use the NEWEST one) =====`);
       console.log('[whatsapp] Easiest: open this link in your browser and scan the image:');
       console.log(
@@ -260,6 +262,22 @@ async function connect() {
   setInterval(() => {
     if (socket) void refreshGroups(socket);
   }, 60_000).unref();
+
+  // Watch for reconnect requests from the app. When the user taps
+  // "Re-scan QR", we end the socket so Baileys generates a fresh QR.
+  if (reconnectPollInterval) clearInterval(reconnectPollInterval);
+  reconnectPollInterval = setInterval(async () => {
+    const requestedAt = await getReconnectRequest();
+    if (!requestedAt) return;
+    if (lastReconnectRequestAt && new Date(requestedAt) <= new Date(lastReconnectRequestAt)) return;
+    lastReconnectRequestAt = requestedAt;
+    console.log('[whatsapp] reconnect requested from app; restarting socket for fresh QR');
+    try {
+      socket?.end?.(undefined);
+    } catch {
+      /* ignore */
+    }
+  }, 5_000).unref();
 }
 
 console.log('[boot] ParentPulse worker starting');
