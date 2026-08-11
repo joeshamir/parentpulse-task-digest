@@ -202,7 +202,23 @@
   [dir="rtl"] p,
   html[lang="he"] p {
     line-height: 1.6;
-  }
+}
+
+/* Unlayered so it beats Tailwind's theme layer: Hebrew uses Assistant everywhere,
+   including digits inside display-font elements. */
+[dir="rtl"],
+html[lang="he"],
+html[lang="he"] body {
+  --font-sans: "Assistant", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Assistant", ui-sans-serif, system-ui, sans-serif;
+}
+
+[dir="rtl"] *,
+html[lang="he"] * {
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+  font-variant-numeric: normal;
+}
 }
 
 @utility app-canvas {
