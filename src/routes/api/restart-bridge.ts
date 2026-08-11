@@ -69,7 +69,7 @@ export const Route = createFileRoute('/api/restart-bridge')({
               error:
                 'Server is not configured for one-tap restart. Ask the project owner to add RAILWAY_API_TOKEN, RAILWAY_SERVICE_ID and RAILWAY_ENVIRONMENT_ID.',
             },
-            { status: 500 },
+            { status: 200 },
           );
         }
 
