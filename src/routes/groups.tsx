@@ -256,6 +256,53 @@ function GroupsScreen() {
     }
   }
 
+  async function restartBridge() {
+    if (!user) {
+      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      return;
+    }
+    setRestarting(true);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session?.access_token) {
+      setRestarting(false);
+      toast.error(
+        t({
+          en: "Could not get your session. Please sign in again.",
+          he: "לא ניתן לקבל את הסשן. אנא התחברו שוב.",
+        }),
+      );
+      return;
+    }
+    try {
+      const res = await fetch("/api/restart-bridge", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+      });
+      const body = (await res.json()) as { success?: boolean; error?: string; message?: string };
+      if (res.ok && body.success) {
+        toast.success(
+          t({
+            en: "Restart requested. The connector should be back online within 30–60 seconds.",
+            he: "בקשת ההפעלה נשלחה. המחבר אמור לחזור לפעולה תוך 30–60 שניות.",
+          }),
+        );
+        setAwaitingQrSince(Date.now());
+      } else {
+        toast.error(
+          t({
+            en: body.error || "Could not restart the connector.",
+            he: "לא ניתן להפעיל את המחבר מחדש.",
+          }),
+        );
+      }
+    } catch {
+      toast.error(t({ en: "Network error. Please try again.", he: "שגיאת רשת. אנא נסו שוב." }));
+    } finally {
+      setRestarting(false);
+    }
+  }
+
+
   const bridgeOffline = lastSeen === null || now - lastSeen > 45_000;
   const showQr = Boolean(qrCode) && connection !== "connected" && !bridgeOffline;
   const awaitingQr = Boolean(awaitingQrSince) && !qrCode && !bridgeOffline;
