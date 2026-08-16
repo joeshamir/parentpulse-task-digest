@@ -13,6 +13,7 @@ import { env } from './env.js';
 import { extractTask } from './extract.js';
 import { sendTask, syncGroups, getReconnectRequest, ackReconnect } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
+import { startNotificationScheduler } from './notify.js';
 import {
   startHealthServer,
   setState,
@@ -353,6 +354,7 @@ async function forceFreshQr() {
 console.log('[boot] ParentPulse worker starting');
 console.log(`[boot] auth dir: ${path.resolve(env.authDir)}`);
 startHealthServer();
+startNotificationScheduler();
 // Treat any pending request as already handled: a boot is a fresh connection.
 // If the app asked for a reconnect while the worker was offline, clear the
 // flag so the worker does not immediately restart right after coming up.

@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, FlaskConical, Loader2, QrCode, RefreshCw, Search, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { Search, Sparkles, Users } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
 import { Switch } from "@/components/ui/switch";
@@ -8,21 +8,20 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
 import { supabase } from "@/integrations/supabase/browser-client";
 import { groups as demoGroups, isRecommended, recommendKeywords } from "@/lib/parentpulse-data";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/groups")({
   head: () => ({
     meta: [
-      { title: "Groups & Settings — ParentPulse" },
+      { title: "Groups — ParentPulse" },
       {
         name: "description",
         content:
-          "Connect the WhatsApp bridge and pick which parent groups ParentPulse listens to in under 10 seconds.",
+          "Pick which WhatsApp parent groups ParentPulse listens to, in under 10 seconds.",
       },
-      { property: "og:title", content: "Groups & Settings — ParentPulse" },
+      { property: "og:title", content: "Groups — ParentPulse" },
       {
         property: "og:description",
-        content: "Pair WhatsApp, pick your class and activity groups, mute the noise.",
+        content: "Pick your class and activity groups, mute the noise.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -42,8 +41,8 @@ function initials(name: string) {
 }
 
 function GroupsScreen() {
-  const { t, lang, toggle, dir } = useLang();
-  const { user, signOut } = useAuth();
+  const { t } = useLang();
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(demoGroups.map((g) => [g.id, isRecommended(g)])),
@@ -51,39 +50,23 @@ function GroupsScreen() {
   const [liveGroups, setLiveGroups] = useState<
     Array<{ id: string; jid: string; name: string; members: number; hue: string }>
   >([]);
-  const [connection, setConnection] = useState("pending_qr");
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [lastSeen, setLastSeen] = useState<number | null>(null);
-  const [now, setNow] = useState(() => Date.now());
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [requestingReconnect, setRequestingReconnect] = useState(false);
-  const [awaitingQrSince, setAwaitingQrSince] = useState<number | null>(null);
-  const [qrTimedOut, setQrTimedOut] = useState(false);
-  const [autoRetried, setAutoRetried] = useState(false);
-  const [restarting, setRestarting] = useState(false);
-
-
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    Promise.all([
-      supabase
-        .from("tracked_groups")
-        .select("id, group_jid, group_name, is_tracked")
-        .order("group_name"),
-      supabase
-        .from("whatsapp_sessions")
-        .select("status, qr_code_str, updated_at")
-        .eq("user_id", user.id)
-        .maybeSingle(),
-    ]).then(([groupsResult, sessionResult]) => {
-      if (cancelled) return;
-      if (groupsResult.error) {
-        toast.error(t({ en: "Could not load groups.", he: "לא ניתן לטעון קבוצות." }));
-      } else {
-        const rows = groupsResult.data ?? [];
+
+    void supabase
+      .from("tracked_groups")
+      .select("id, group_jid, group_name, is_tracked")
+      .order("group_name")
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) {
+          toast.error(t({ en: "Could not load groups.", he: "לא ניתן לטעון קבוצות." }));
+          return;
+        }
+        const rows = data ?? [];
         setLiveGroups(
           rows.map((row) => ({
             id: row.id,
@@ -94,69 +77,22 @@ function GroupsScreen() {
           })),
         );
         setSelected(Object.fromEntries(rows.map((row) => [row.id, row.is_tracked])));
-      }
-      if (sessionResult.data?.status) setConnection(sessionResult.data.status);
-      if (sessionResult.data?.qr_code_str) setQrCode(sessionResult.data.qr_code_str);
-      if (sessionResult.data?.updated_at) {
-        setLastSeen(new Date(sessionResult.data.updated_at).getTime());
-      }
-    });
+      });
 
     const channel = supabase
-      .channel("parentpulse_groups_status")
+      .channel("parentpulse_groups_list")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tracked_groups", filter: `user_id=eq.${user.id}` },
         () => window.location.reload(),
       )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "whatsapp_sessions", filter: `user_id=eq.${user.id}` },
-        (payload) => {
-          const row = payload.new as {
-            status?: string;
-            qr_code_str?: string | null;
-            updated_at?: string | null;
-          };
-          setConnection(row.status ?? "pending_qr");
-          const nextQr = row.qr_code_str ?? null;
-          setQrCode(nextQr);
-          setLastSeen(row.updated_at ? new Date(row.updated_at).getTime() : Date.now());
-          if (nextQr) {
-            setAwaitingQrSince(null);
-            setQrTimedOut(false);
-            setAutoRetried(false);
-          }
-        },
-      )
       .subscribe();
+
     return () => {
       cancelled = true;
       void supabase.removeChannel(channel);
     };
   }, [user, t]);
-
-  // Ticks the clock so "last activity" and the offline check stay honest.
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 5_000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // If no QR shows up within 20s, retry once automatically, then give up
-  // and show the offline card instead of spinning forever.
-  useEffect(() => {
-    if (!awaitingQrSince) return;
-    const timer = setTimeout(() => {
-      if (!autoRetried) {
-        setAutoRetried(true);
-        void requestReconnect(true);
-      } else {
-        setQrTimedOut(true);
-      }
-    }, 20_000);
-    return () => clearTimeout(timer);
-  }, [awaitingQrSince, autoRetried]);
-
 
   const groups = user
     ? liveGroups.map((group) => ({
@@ -168,13 +104,10 @@ function GroupsScreen() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return groups;
-    return groups.filter((g) =>
-      `${g.name.en} ${g.name.he}`.toLowerCase().includes(q),
-    );
+    return groups.filter((g) => `${g.name.en} ${g.name.he}`.toLowerCase().includes(q));
   }, [groups, query]);
 
   const selectedCount = Object.values(selected).filter(Boolean).length;
-  const connected = connection === "connected";
 
   async function saveGroups() {
     if (!user) {
@@ -194,141 +127,15 @@ function GroupsScreen() {
       toast.error(t({ en: "Could not save groups.", he: "לא ניתן לשמור קבוצות." }));
       return;
     }
-    // The external worker refreshes this list frequently and applies changes
-    // by stable WhatsApp group ID. This event lets other open app tabs update.
     window.dispatchEvent(new CustomEvent("parentpulse:groups-saved"));
     toast.success(t({ en: `Saved ${selectedCount} groups`, he: `נשמרו ${selectedCount} קבוצות` }));
   }
-
-  async function sendTestTask() {
-    if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
-      return;
-    }
-    setTesting(true);
-    const firstSelected = liveGroups.find((group) => selected[group.id]);
-    const { error } = await supabase.from("action_items").insert({
-      user_id: user.id,
-      group_name: firstSelected?.name ?? "ParentPulse",
-      title: t({
-        en: "Test task — pay 25₪ to the class committee",
-        he: "משימת בדיקה — לשלם 25₪ לוועד כיתה",
-      }),
-      category: "School",
-    });
-    setTesting(false);
-    if (error) {
-      toast.error(t({ en: "Could not create the test task.", he: "לא ניתן ליצור משימת בדיקה." }));
-      return;
-    }
-    toast.success(t({ en: "Test task added to Actions", he: "משימת בדיקה נוספה למשימות" }));
-  }
-
-  async function requestReconnect(silent = false) {
-    if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
-      return;
-    }
-    setRequestingReconnect(true);
-    setQrTimedOut(false);
-    setQrCode(null);
-    // updated_at is deliberately NOT set here: it is the worker's heartbeat,
-    // and writing it from the app would fake a live bridge.
-    const { error } = await supabase
-      .from("whatsapp_sessions")
-      .upsert(
-        { user_id: user.id, reconnect_requested_at: new Date().toISOString() },
-        { onConflict: "user_id" },
-      );
-    setRequestingReconnect(false);
-    if (error) {
-      toast.error(t({ en: "Could not request reconnect.", he: "לא ניתן לבקש חיבור מחדש." }));
-      return;
-    }
-    setAwaitingQrSince(Date.now());
-    if (!silent) {
-      toast.success(
-        t({
-          en: "Reconnect requested — a fresh QR will appear in a few seconds",
-          he: "בקשת חיבור מחדש נשלחה — קוד QR חדש יופיע תוך שניות",
-        }),
-      );
-    }
-  }
-
-  async function restartBridge() {
-    if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
-      return;
-    }
-    setRestarting(true);
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session?.access_token) {
-      setRestarting(false);
-      toast.error(
-        t({
-          en: "Could not get your session. Please sign in again.",
-          he: "לא ניתן לקבל את הסשן. אנא התחברו שוב.",
-        }),
-      );
-      return;
-    }
-    try {
-      const res = await fetch("/api/restart-bridge", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
-      });
-      const body = (await res.json()) as { success?: boolean; error?: string; message?: string };
-      if (res.ok && body.success) {
-        toast.success(
-          t({
-            en: "Restart requested. The connector should be back online within 30–60 seconds.",
-            he: "בקשת ההפעלה נשלחה. המחבר אמור לחזור לפעולה תוך 30–60 שניות.",
-          }),
-        );
-        setAwaitingQrSince(Date.now());
-      } else {
-        toast.error(
-          t({
-            en: body.error || "Could not restart the connector.",
-            he: body.error
-              ? `לא ניתן להפעיל את המחבר מחדש: ${body.error}`
-              : "לא ניתן להפעיל את המחבר מחדש.",
-          }),
-        );
-
-      }
-    } catch {
-      toast.error(t({ en: "Network error. Please try again.", he: "שגיאת רשת. אנא נסו שוב." }));
-    } finally {
-      setRestarting(false);
-    }
-  }
-
-
-  const bridgeOffline = lastSeen === null || now - lastSeen > 45_000;
-  const showQr = Boolean(qrCode) && connection !== "connected" && !bridgeOffline;
-  const awaitingQr = Boolean(awaitingQrSince) && !qrCode && !bridgeOffline;
-
-  const disconnected = connection === "disconnected" && !bridgeOffline;
-  const live = connected && !bridgeOffline;
-  const secondsSinceSeen = lastSeen ? Math.max(0, Math.round((now - lastSeen) / 1000)) : null;
-  const lastActivity =
-    secondsSinceSeen === null
-      ? null
-      : secondsSinceSeen < 60
-        ? t({ en: "Last activity just now", he: "פעילות אחרונה ממש עכשיו" })
-        : t({
-            en: `Last activity ${Math.round(secondsSinceSeen / 60)} min ago`,
-            he: `פעילות אחרונה לפני ${Math.round(secondsSinceSeen / 60)} דק׳`,
-          });
-
 
   return (
     <MobileShell>
       <header className="px-5 pt-5">
         <h1 className="text-[26px] font-bold leading-tight tracking-tight">
-          {t({ en: "Groups & Settings", he: "קבוצות והגדרות" })}
+          {t({ en: "Groups", he: "קבוצות" })}
         </h1>
         <p className="mt-1 text-[13px] font-medium text-muted-foreground">
           {t({
@@ -337,154 +144,6 @@ function GroupsScreen() {
           })}
         </p>
       </header>
-
-      {/* Connection card */}
-      <section className="mt-4 px-5">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
-              <ShieldCheck className="h-4 w-4" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold tracking-tight text-card-foreground">
-                {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
-              </p>
-              <p
-                className={cn(
-                  "mt-0.5 flex items-center gap-1.5 text-[12px] font-medium",
-                  bridgeOffline
-                    ? "text-warning"
-                    : awaitingQr
-                      ? "text-warning"
-                      : live
-                        ? "text-success"
-                        : disconnected
-                          ? "text-destructive"
-                          : "text-muted-foreground",
-                )}
-              >
-                <span
-                  className={cn(
-                    "h-1.5 w-1.5 rounded-full",
-                    bridgeOffline
-                      ? "bg-warning"
-                      : awaitingQr
-                        ? "animate-pulse bg-warning"
-                        : live
-                          ? "bg-success"
-                          : disconnected
-                            ? "bg-destructive"
-                            : "bg-warning",
-                  )}
-                />
-                {bridgeOffline
-                  ? t({ en: "Connector offline", he: "המחבר אינו פעיל" })
-                  : awaitingQr
-                    ? t({ en: "Preparing a new code…", he: "מכינים קוד חדש…" })
-                    : live
-                      ? lastActivity ?? t({ en: "Connected", he: "מחובר" })
-                      : disconnected
-                        ? t({ en: "Disconnected", he: "מנותק" })
-                        : t({ en: "Waiting for scan", he: "ממתין לסריקה" })}
-              </p>
-            </div>
-            <button
-              onClick={() => void requestReconnect()}
-              disabled={requestingReconnect || bridgeOffline}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
-            >
-              <QrCode className="h-3.5 w-3.5" />
-              {requestingReconnect
-                ? t({ en: "Requesting…", he: "מבקשים…" })
-                : t({ en: "Re-scan QR", he: "סריקת QR" })}
-            </button>
-          </div>
-
-          {bridgeOffline && (
-            <div className="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4">
-              <p className="flex items-start gap-2 text-[12px] font-semibold leading-relaxed text-foreground">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-                {t({
-                  en: "Your background connector isn't running, so a new QR can't be created right now.",
-                  he: "המחבר שרץ ברקע אינו פעיל, ולכן לא ניתן ליצור קוד QR כרגע.",
-                })}
-              </p>
-              <button
-                onClick={() => void restartBridge()}
-                disabled={restarting}
-                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-warning px-3 py-2 text-[12px] font-semibold text-warning-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
-              >
-                {restarting ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {t({ en: "Restarting connector…", he: "מפעילים את המחבר מחדש…" })}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    {t({ en: "Restart connector", he: "הפעלת המחבר מחדש" })}
-                  </>
-                )}
-              </button>
-              <p className="mt-2 text-[11px] font-medium leading-relaxed text-muted-foreground">
-                {t({
-                  en: "This asks Railway to restart the worker. It usually takes 30–60 seconds.",
-                  he: "פעולה זו מבקשת מ-Railway להפעיל את ה-worker מחדש. זה לוקח בדרך כלל 30–60 שניות.",
-                })}
-              </p>
-            </div>
-          )}
-
-
-          {awaitingQr && (
-            <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
-                {t({
-                  en: "Preparing a new code… this usually takes 2–6 seconds.",
-                  he: "מכינים קוד חדש… זה לוקח בדרך כלל 2–6 שניות.",
-                })}
-              </p>
-              {qrTimedOut && (
-                <p className="mt-2 text-center text-[12px] font-semibold leading-relaxed text-destructive">
-                  {t({
-                    en: "Still nothing. The connector may need a restart — see the instructions above.",
-                    he: "עדיין אין קוד. ייתכן שצריך להפעיל את המחבר מחדש — ראו הוראות למעלה.",
-                  })}
-                </p>
-              )}
-            </div>
-          )}
-
-          {showQr && (
-            <div className="mt-4 flex flex-col items-center rounded-xl border border-border bg-background p-4">
-              <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrCode ?? "")}`}
-                alt={t({ en: "WhatsApp pairing QR code", he: "קוד QR לצימוד וואטסאפ" })}
-                className="h-44 w-44 rounded-lg"
-              />
-              <p className="mt-3 text-center text-[12px] font-medium leading-relaxed text-muted-foreground">
-                {t({
-                  en: "Open WhatsApp → Settings → Linked devices → Link a device, then point your camera at this code. The code refreshes automatically.",
-                  he: "פתחו את וואטסאפ → הגדרות → מכשירים מקושרים → קישור מכשיר, וכוונו את המצלמה לקוד. הקוד מתרענן אוטומטית.",
-                })}
-              </p>
-
-            </div>
-          )}
-
-          <button
-            onClick={sendTestTask}
-            disabled={testing}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-border px-3 py-2 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
-          >
-            <FlaskConical className="h-3.5 w-3.5" />
-            {testing
-              ? t({ en: "Sending…", he: "שולחים…" })
-              : t({ en: "Send test task", he: "שליחת משימת בדיקה" })}
-          </button>
-        </div>
-      </section>
 
       {/* Search */}
       <section className="mt-5 px-5">
@@ -544,9 +203,7 @@ function GroupsScreen() {
                 </div>
                 <Switch
                   checked={on}
-                  onCheckedChange={(v) =>
-                    setSelected((prev) => ({ ...prev, [group.id]: v }))
-                  }
+                  onCheckedChange={(v) => setSelected((prev) => ({ ...prev, [group.id]: v }))}
                   aria-label={`${t({ en: "Listen to", he: "האזנה ל" })} ${t(group.name)}`}
                 />
               </li>
@@ -558,60 +215,6 @@ function GroupsScreen() {
             </li>
           )}
         </ul>
-      </section>
-
-      {/* Preferences */}
-      <section className="mt-6 px-5">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          {t({ en: "Preferences", he: "העדפות" })}
-        </h2>
-        <div className="mt-2 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
-            <span className="min-w-0 text-[14px] font-semibold tracking-tight text-card-foreground">
-              {t({ en: "Language", he: "שפה" })}
-            </span>
-            <button
-              onClick={toggle}
-              className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {lang === "en" ? "English" : "עברית"}
-            </button>
-          </div>
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3">
-            <span className="min-w-0 truncate text-[14px] font-semibold tracking-tight text-card-foreground">
-              {user?.email ?? t({ en: "Not signed in", he: "לא מחוברים" })}
-            </span>
-            {user ? (
-              <button
-                onClick={() => signOut()}
-                className="shrink-0 rounded-md border border-border px-2.5 py-1 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
-              >
-                {t({ en: "Sign out", he: "יציאה" })}
-              </button>
-            ) : (
-              <Link
-                to="/auth"
-                className="shrink-0 rounded-md bg-foreground px-2.5 py-1 text-[12px] font-semibold text-background"
-              >
-                {t({ en: "Sign in", he: "כניסה" })}
-              </Link>
-            )}
-          </div>
-          <Link
-            to="/privacy"
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
-          >
-            <span className="flex min-w-0 items-center gap-2.5">
-              <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="text-[14px] font-semibold tracking-tight text-card-foreground">
-                {t({ en: "Privacy & Security", he: "פרטיות ואבטחה" })}
-              </span>
-            </span>
-            <span className="text-[12px] font-semibold text-muted-foreground">
-              {dir === "rtl" ? "←" : "→"}
-            </span>
-          </Link>
-        </div>
       </section>
 
       {/* Sticky save */}
