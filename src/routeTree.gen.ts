@@ -16,6 +16,7 @@ import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ApiRestartBridgeRouteImport } from './routes/api/restart-bridge'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
+import { Route as ApiPublicVapidKeyRouteImport } from './routes/api/public/vapid-key'
 import { Route as ApiPublicWorkerGroupsRouteImport } from './routes/api/public/worker-groups'
 
 const IndexRoute = IndexRouteImport.update({
@@ -53,6 +54,11 @@ const ApiPublicIngestTaskRoute = ApiPublicIngestTaskRouteImport.update({
   path: '/api/public/ingest-task',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicVapidKeyRoute = ApiPublicVapidKeyRouteImport.update({
+  id: '/api/public/vapid-key',
+  path: '/api/public/vapid-key',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWorkerGroupsRoute = ApiPublicWorkerGroupsRouteImport.update({
   id: '/api/public/worker-groups',
   path: '/api/public/worker-groups',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
+    | '/api/public/vapid-key'
     | '/api/public/worker-groups'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
+    | '/api/public/vapid-key'
     | '/api/public/worker-groups'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
+    | '/api/public/vapid-key'
     | '/api/public/worker-groups'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ApiRestartBridgeRoute: typeof ApiRestartBridgeRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
+  ApiPublicVapidKeyRoute: typeof ApiPublicVapidKeyRoute
   ApiPublicWorkerGroupsRoute: typeof ApiPublicWorkerGroupsRoute
 }
 
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicIngestTaskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/vapid-key': {
+      id: '/api/public/vapid-key'
+      path: '/api/public/vapid-key'
+      fullPath: '/api/public/vapid-key'
+      preLoaderRoute: typeof ApiPublicVapidKeyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/worker-groups': {
       id: '/api/public/worker-groups'
       path: '/api/public/worker-groups'
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ApiRestartBridgeRoute: ApiRestartBridgeRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
+  ApiPublicVapidKeyRoute: ApiPublicVapidKeyRoute,
   ApiPublicWorkerGroupsRoute: ApiPublicWorkerGroupsRoute,
 }
 export const routeTree = rootRouteImport
