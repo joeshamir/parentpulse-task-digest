@@ -15,6 +15,9 @@ export const env = {
   ingestUrl:
     process.env.INGEST_URL ||
     'https://parentpulse-task-digest.lovable.app/api/public/ingest-task',
+  notifyUrl:
+    process.env.NOTIFY_URL ||
+    'https://parentpulse-task-digest.lovable.app/api/public/notify-jobs',
   groupsUrl:
     process.env.GROUPS_URL ||
     'https://parentpulse-task-digest.lovable.app/api/public/worker-groups',

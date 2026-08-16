@@ -74,6 +74,66 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_prefs: {
+        Row: {
+          daily_summary_enabled: boolean
+          last_sent_on: string | null
+          send_hour_local: number
+          test_requested_at: string | null
+          timezone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          daily_summary_enabled?: boolean
+          last_sent_on?: string | null
+          send_hour_local?: number
+          test_requested_at?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          daily_summary_enabled?: boolean
+          last_sent_on?: string | null
+          send_hour_local?: number
+          test_requested_at?: string | null
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tracked_groups: {
         Row: {
           created_at: string
