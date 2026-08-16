@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as DigestRouteImport } from './routes/digest'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiRestartBridgeRouteImport } from './routes/api/restart-bridge'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
 import { Route as ApiPublicNotifyJobsRouteImport } from './routes/api/public/notify-jobs'
@@ -43,6 +44,11 @@ const GroupsRoute = GroupsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRestartBridgeRoute = ApiRestartBridgeRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
+  '/settings': typeof SettingsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
+  '/settings': typeof SettingsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/digest': typeof DigestRoute
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
+  '/settings': typeof SettingsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/privacy'
+    | '/settings'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
     | '/api/public/notify-jobs'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/privacy'
+    | '/settings'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
     | '/api/public/notify-jobs'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/digest'
     | '/groups'
     | '/privacy'
+    | '/settings'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
     | '/api/public/notify-jobs'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   DigestRoute: typeof DigestRoute
   GroupsRoute: typeof GroupsRoute
   PrivacyRoute: typeof PrivacyRoute
+  SettingsRoute: typeof SettingsRoute
   ApiRestartBridgeRoute: typeof ApiRestartBridgeRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
   ApiPublicNotifyJobsRoute: typeof ApiPublicNotifyJobsRoute
@@ -195,6 +208,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/restart-bridge': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   DigestRoute: DigestRoute,
   GroupsRoute: GroupsRoute,
   PrivacyRoute: PrivacyRoute,
+  SettingsRoute: SettingsRoute,
   ApiRestartBridgeRoute: ApiRestartBridgeRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
   ApiPublicNotifyJobsRoute: ApiPublicNotifyJobsRoute,
