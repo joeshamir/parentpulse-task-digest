@@ -79,7 +79,10 @@ async function sendPush(
     },
     vapid,
   );
-  return fetch(subscription.endpoint, payload);
+  return fetch(subscription.endpoint, {
+    ...payload,
+    body: Uint8Array.from(payload.body).buffer,
+  });
 }
 
 export const Route = createFileRoute('/api/public/notify-jobs')({
