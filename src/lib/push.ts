@@ -59,7 +59,10 @@ export async function enablePush(userId: string): Promise<PushOutcome> {
         applicationServerKey: urlBase64ToUint8Array(key) as BufferSource,
       }));
 
-    const json = subscription.toJSON() as { endpoint?: string; keys?: Record<string, string> };
+    const json = subscription.toJSON() as {
+      endpoint?: string;
+      keys?: { p256dh?: string; auth?: string };
+    };
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
       return { ok: false, reason: "error" };
     }
