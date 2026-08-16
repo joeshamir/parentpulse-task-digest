@@ -15,6 +15,12 @@ export const env = {
   ingestUrl:
     process.env.INGEST_URL ||
     'https://parentpulse-task-digest.lovable.app/api/public/ingest-task',
+  notifyUrl:
+    process.env.NOTIFY_URL ||
+    'https://parentpulse-task-digest.lovable.app/api/public/notify-jobs',
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY || '',
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY || '',
+  vapidSubject: process.env.VAPID_SUBJECT || 'mailto:notifications@parentpulse.app',
   groupsUrl:
     process.env.GROUPS_URL ||
     'https://parentpulse-task-digest.lovable.app/api/public/worker-groups',
