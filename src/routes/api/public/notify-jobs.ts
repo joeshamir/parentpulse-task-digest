@@ -79,8 +79,13 @@ async function sendPush(
     },
     vapid,
   );
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(payload.headers)) {
+    if (value !== undefined) headers.set(name, value);
+  }
   return fetch(subscription.endpoint, {
-    ...payload,
+    method: payload.method,
+    headers,
     body: Uint8Array.from(payload.body).buffer,
   });
 }
