@@ -1,10 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { buildPushPayload } from '@block65/webcrypto-web-push';
 import { z } from 'zod';
 
 const payloadSchema = z.object({
   worker_token: z.string().min(1),
-  action: z.enum(['poll', 'prune']).default('poll'),
-  endpoints: z.array(z.string().min(1)).max(50).optional(),
 });
 
 const CORS_HEADERS: Record<string, string> = {
@@ -55,6 +54,34 @@ function summaryText(titles: string[], lang: 'he' | 'en') {
   return head + rest;
 }
 
+type PushSubscriptionRow = { endpoint: string; p256dh: string; auth: string };
+type NotificationJob = { kind: string; title: string; body: string; url: string };
+
+async function sendPush(
+  subscription: PushSubscriptionRow,
+  job: NotificationJob,
+  vapid: { subject: string; publicKey: string; privateKey: string },
+) {
+  const payload = await buildPushPayload(
+    {
+      data: JSON.stringify({
+        title: job.title,
+        body: job.body,
+        url: job.url,
+        tag: job.kind === 'test' ? 'parentpulse-test' : 'parentpulse-daily',
+      }),
+      options: { ttl: 60 * 60 },
+    },
+    {
+      endpoint: subscription.endpoint,
+      expirationTime: null,
+      keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+    },
+    vapid,
+  );
+  return fetch(subscription.endpoint, payload);
+}
+
 export const Route = createFileRoute('/api/public/notify-jobs')({
   server: {
     handlers: {
@@ -62,6 +89,13 @@ export const Route = createFileRoute('/api/public/notify-jobs')({
       POST: async ({ request }) => {
         const workerSecret = process.env['WORKER_SECRET'];
         if (!workerSecret) return json({ success: false, error: 'server not configured' }, 500);
+
+        const vapidPublicKey = process.env['VAPID_PUBLIC_KEY'];
+        const vapidPrivateKey = process.env['VAPID_PRIVATE_KEY'];
+        const vapidSubject = process.env['VAPID_SUBJECT'];
+        if (!vapidPublicKey || !vapidPrivateKey || !vapidSubject) {
+          return json({ success: false, error: 'push not configured' }, 500);
+        }
 
         const parsed = payloadSchema.safeParse(await request.json().catch(() => null));
         if (!parsed.success) return json({ success: false, error: 'invalid payload' }, 400);
@@ -72,25 +106,13 @@ export const Route = createFileRoute('/api/public/notify-jobs')({
 
         const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
 
-        if (parsed.data.action === 'prune') {
-          const endpoints = parsed.data.endpoints ?? [];
-          if (endpoints.length > 0) {
-            await supabaseAdmin
-              .from('push_subscriptions')
-              .delete()
-              .eq('user_id', userId)
-              .in('endpoint', endpoints);
-          }
-          return json({ success: true });
-        }
-
         const { data: prefs } = await supabaseAdmin
           .from('notification_prefs')
           .select('daily_summary_enabled, send_hour_local, timezone, last_sent_on, test_requested_at')
           .eq('user_id', userId)
           .maybeSingle();
 
-        if (!prefs) return json({ success: true, jobs: [], vapid: null });
+        if (!prefs) return json({ success: true, sent: 0 });
 
         const { data: subs } = await supabaseAdmin
           .from('push_subscriptions')
@@ -98,9 +120,9 @@ export const Route = createFileRoute('/api/public/notify-jobs')({
           .eq('user_id', userId);
 
         const subscriptions = subs ?? [];
-        if (subscriptions.length === 0) return json({ success: true, jobs: [] });
+        if (subscriptions.length === 0) return json({ success: true, sent: 0 });
 
-        const jobs: Array<{ kind: string; title: string; body: string; url: string }> = [];
+        const jobs: NotificationJob[] = [];
 
         if (prefs.test_requested_at) {
           await supabaseAdmin
@@ -150,7 +172,42 @@ export const Route = createFileRoute('/api/public/notify-jobs')({
           }
         }
 
-        return json({ success: true, jobs, subscriptions });
+        const vapid = {
+          subject: vapidSubject,
+          publicKey: vapidPublicKey,
+          privateKey: vapidPrivateKey,
+        };
+        const deadEndpoints = new Set<string>();
+        let sent = 0;
+
+        for (const job of jobs) {
+          for (const subscription of subscriptions) {
+            try {
+              const response = await sendPush(subscription, job, vapid);
+              if (response.ok) sent += 1;
+              else if (response.status === 404 || response.status === 410) {
+                deadEndpoints.add(subscription.endpoint);
+              } else {
+                console.error(`[notify-jobs] push service returned ${response.status}`);
+              }
+            } catch (error) {
+              console.error(
+                '[notify-jobs] push delivery failed:',
+                error instanceof Error ? error.message : 'unknown error',
+              );
+            }
+          }
+        }
+
+        if (deadEndpoints.size > 0) {
+          await supabaseAdmin
+            .from('push_subscriptions')
+            .delete()
+            .eq('user_id', userId)
+            .in('endpoint', [...deadEndpoints]);
+        }
+
+        return json({ success: true, sent, pruned: deadEndpoints.size });
       },
     },
   },
