@@ -16,6 +16,7 @@ import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ApiRestartBridgeRouteImport } from './routes/api/restart-bridge'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
+import { Route as ApiPublicNotifyJobsRouteImport } from './routes/api/public/notify-jobs'
 import { Route as ApiPublicVapidKeyRouteImport } from './routes/api/public/vapid-key'
 import { Route as ApiPublicWorkerGroupsRouteImport } from './routes/api/public/worker-groups'
 
@@ -54,6 +55,11 @@ const ApiPublicIngestTaskRoute = ApiPublicIngestTaskRouteImport.update({
   path: '/api/public/ingest-task',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNotifyJobsRoute = ApiPublicNotifyJobsRouteImport.update({
+  id: '/api/public/notify-jobs',
+  path: '/api/public/notify-jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicVapidKeyRoute = ApiPublicVapidKeyRouteImport.update({
   id: '/api/public/vapid-key',
   path: '/api/public/vapid-key',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
   '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
   '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
+  '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
   '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
   '/api/public/worker-groups': typeof ApiPublicWorkerGroupsRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
+    | '/api/public/notify-jobs'
     | '/api/public/vapid-key'
     | '/api/public/worker-groups'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
+    | '/api/public/notify-jobs'
     | '/api/public/vapid-key'
     | '/api/public/worker-groups'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/api/restart-bridge'
     | '/api/public/ingest-task'
+    | '/api/public/notify-jobs'
     | '/api/public/vapid-key'
     | '/api/public/worker-groups'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ApiRestartBridgeRoute: typeof ApiRestartBridgeRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
+  ApiPublicNotifyJobsRoute: typeof ApiPublicNotifyJobsRoute
   ApiPublicVapidKeyRoute: typeof ApiPublicVapidKeyRoute
   ApiPublicWorkerGroupsRoute: typeof ApiPublicWorkerGroupsRoute
 }
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicIngestTaskRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/notify-jobs': {
+      id: '/api/public/notify-jobs'
+      path: '/api/public/notify-jobs'
+      fullPath: '/api/public/notify-jobs'
+      preLoaderRoute: typeof ApiPublicNotifyJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/vapid-key': {
       id: '/api/public/vapid-key'
       path: '/api/public/vapid-key'
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ApiRestartBridgeRoute: ApiRestartBridgeRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
+  ApiPublicNotifyJobsRoute: ApiPublicNotifyJobsRoute,
   ApiPublicVapidKeyRoute: ApiPublicVapidKeyRoute,
   ApiPublicWorkerGroupsRoute: ApiPublicWorkerGroupsRoute,
 }
