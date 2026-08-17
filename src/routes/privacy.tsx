@@ -5,7 +5,6 @@ import {
   Fingerprint,
   Lock,
   MessageSquareOff,
-  Server,
   ShieldCheck,
 } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
@@ -19,13 +18,13 @@ export const Route = createFileRoute("/privacy")({
       {
         name: "description",
         content:
-          "How ParentPulse handles your WhatsApp data, Google sign-in, and what we store.",
+          "What ParentPulse stores, how it uses WhatsApp data, and how your account stays secure.",
       },
       { property: "og:title", content: "Privacy & Security — ParentPulse" },
       {
         property: "og:description",
         content:
-          "How ParentPulse handles your WhatsApp data, Google sign-in, and what we store.",
+          "What ParentPulse stores, how it uses WhatsApp data, and how your account stays secure.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -50,82 +49,68 @@ const copy = {
     he: "פרטיות ואבטחה",
   },
   subtitle: {
-    en: "How ParentPulse handles your data, in plain language.",
-    he: "איך ParentPulse מטפלת במידע שלכם, בשפה פשוטה.",
+    en: "What ParentPulse does and doesn't do with your data.",
+    he: "מה ParentPulse כן ולא עושה עם המידע שלכם.",
   },
   back: {
-    en: "Back to Groups",
-    he: "חזרה לקבוצות",
+    en: "Back to Settings",
+    he: "חזרה להגדרות",
   },
   sections: [
     {
       icon: MessageSquareOff,
       hue: "bg-success/15 text-success",
       title: {
-        en: "No chat logs are kept",
-        he: "אנחנו לא שומרים היסטוריית צ׳אט",
+        en: "We don't keep your chats",
+        he: "אנחנו לא שומרים את הצ׳אטים",
       },
       body: {
         en:
-          "ParentPulse reads incoming WhatsApp messages in memory, extracts tasks or summaries, and discards the original text. We do not store raw chat history in our database.",
+          "ParentPulse turns WhatsApp messages into tasks or summaries and removes the original message. Your chat history is never stored.",
         he:
-          "ParentPulse קוראת הודעות וואטסאפ בתוך הזיכרון, מפיקה משימות או תקצירים, ומוחקת את הטקסט המקורי. אנחנו לא שומרים היסטוריית צ׳אט גולמית במסד הנתונים.",
-      },
-    },
-    {
-      icon: Server,
-      hue: "bg-primary/15 text-primary",
-      title: {
-        en: "WhatsApp runs through a separate worker",
-        he: "החיבור לוואטסאפ עובר דרך worker נפרד",
-      },
-      body: {
-        en:
-          "The app itself does not log into WhatsApp. A background worker on Railway keeps the connection alive using Baileys. That worker only sends structured results to ParentPulse.",
-        he:
-          "האפליקציה עצמה לא מתחברת לוואטסאפ. worker ברקע ב-Railway שומר על החיבור באמצעות Baileys. ה-worker שולח רק תוצאות מובנות ל-ParentPulse.",
+          "ParentPulse הופכת הודעות וואטסאפ למשימות או תקצירים ומוחקת את ההודעה המקורית. היסטוריית הצ׳אטים שלכם אף פעם לא נשמרת.",
       },
     },
     {
       icon: Database,
-      hue: "bg-warning/15 text-warning",
+      hue: "bg-primary/15 text-primary",
       title: {
-        en: "What we do store",
-        he: "מה כן נשמר",
+        en: "We store only what you need",
+        he: "אנחנו שומרים רק מה שנדרש",
       },
       body: {
         en:
-          "We keep only: your selected WhatsApp groups, connection state, extracted tasks (title, category, due date, completion status), short daily summaries, and basic Google account info from sign-in.",
+          "Your account keeps your selected groups, your extracted tasks, short daily summaries, and basic sign-in details so the app can work.",
         he:
-          "אנחנו שומרים רק את: קבוצות וואטסאפ שנבחרו, מצב החיבור, משימות שחולצו (כותרת, קטגוריה, תאריך יעד, סטטוס השלמה), תקצירים יומיים קצרים, ופרטי חשבון Google בסיסיים מהכניסה.",
+          "החשבון שלכם שומר את הקבוצות שנבחרו, את המשימות שחולצו, תקצירים יומיים קצרים, ופרטי כניסה בסיסיים כדי שהאפליקציה תוכל לפעול.",
       },
     },
     {
       icon: Fingerprint,
       hue: "bg-info/15 text-info",
       title: {
-        en: "Google sign-in is managed",
-        he: "הכניסה דרך Google מנוהלת",
+        en: "Sign-in is managed securely",
+        he: "הכניסה מתבצעת בצורה מאובטחת",
       },
       body: {
         en:
-          "Google authentication is handled by Lovable Cloud managed auth. Your Google tokens are managed by the auth service; the app never stores raw tokens in its own database.",
+          "Google sign-in is handled by a managed auth service. ParentPulse does not store your Google password or raw tokens.",
         he:
-          "האימות דרך Google מתבצע על ידי שירות האימות המנוהל של Lovable Cloud. האסימונים של Google מנוהלים על ידי שירות האימות; האפליקציה אף פעם לא שומרת אותם גולמיים במסד הנתונים שלה.",
+          "הכניסה דרך Google מתבצעת דרך שירות אימות מנוהל. ParentPulse לא שומרת את הסיסמה של Google או את האסימונים הגולמיים.",
       },
     },
     {
       icon: Lock,
       hue: "bg-accent/30 text-foreground",
       title: {
-        en: "Worker requests are verified",
-        he: "בקשות מה-worker מאומתות",
+        en: "Your data is protected",
+        he: "המידע שלכם מוגן",
       },
       body: {
         en:
-          "The worker sends data to the app using a signed token. This means random internet traffic cannot post fake tasks into your account.",
+          "Data is sent between WhatsApp and ParentPulse over encrypted connections. No one else can post information into your account.",
         he:
-          "ה-worker שולח נתונים לאפליקציה באמצעות אסימון חתום. המשמעות היא שתעבורת אינטרנט אקראית לא יכולה לפרסם משימות מזויפות בחשבון שלכם.",
+          "המידע נשלח בין וואטסאפ ל-ParentPulse דרך חיבורים מוצפנים. אף אחד אחר לא יכול להזין מידע לחשבון שלכם.",
       },
     },
   ],
@@ -138,7 +123,7 @@ function PrivacyScreen() {
     <MobileShell>
       <header className="px-5 pt-5">
         <Link
-          to="/groups"
+          to="/settings"
           className={cn(
             "inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground",
             dir === "rtl" && "flex-row-reverse",
@@ -160,7 +145,7 @@ function PrivacyScreen() {
           {copy.sections.map((section, i) => (
             <article key={i} className="p-4">
               <div className="flex items-start gap-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border text-muted-foreground">
+                <span className={cn("grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-border", section.hue)}>
                   <section.icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
