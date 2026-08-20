@@ -56,6 +56,11 @@ export function markIngestFailure() {
   status.ingestFailures += 1;
 }
 
+export function markClassifierSource(source) {
+  if (source === 'keyword') status.keywordFallbacks += 1;
+  else status.aiClassifications += 1;
+}
+
 export function markSkipped(reason) {
   status.skipped[reason] = (status.skipped[reason] || 0) + 1;
 }
