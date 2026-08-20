@@ -21,6 +21,9 @@ export const env = {
   groupsUrl:
     process.env.GROUPS_URL ||
     'https://parentpulse-task-digest.lovable.app/api/public/worker-groups',
+  classifyUrl:
+    process.env.CLASSIFY_URL ||
+    'https://parentpulse-task-digest.lovable.app/api/public/classify-task',
   workerSecret: required('WORKER_SECRET'),
   userId: required('USER_ID'),
   groqApiKey: process.env.GROQ_API_KEY || '',
