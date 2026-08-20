@@ -10,7 +10,7 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 
 import { env } from './env.js';
-import { extractTask } from './extract.js';
+import { extractTasks } from './extract.js';
 import { sendTask, syncGroups, getReconnectRequest, ackReconnect } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
 import { startNotificationScheduler } from './notify.js';
