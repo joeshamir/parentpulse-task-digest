@@ -23,6 +23,7 @@ import {
   markActionable,
   markIngestFailure,
   markSkipped,
+  markClassifierSource,
   markGroupSync,
   logDecision,
 } from './health.js';
