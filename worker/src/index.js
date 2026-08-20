@@ -10,7 +10,7 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 
 import { env } from './env.js';
-import { extractTask } from './extract.js';
+import { extractTasks } from './extract.js';
 import { sendTask, syncGroups, getReconnectRequest, ackReconnect } from './ingest.js';
 import { transcribeVoice } from './transcribe.js';
 import { startNotificationScheduler } from './notify.js';
@@ -23,6 +23,7 @@ import {
   markActionable,
   markIngestFailure,
   markSkipped,
+  markClassifierSource,
   markGroupSync,
   logDecision,
 } from './health.js';
@@ -145,21 +146,27 @@ async function handleMessage(sock, message) {
     return;
   }
 
-  const task = extractTask(text, groupName);
   // text stays in memory only; it is never written to disk or a database
-  if (task) {
+  const { tasks, source } = await extractTasks(text, groupName);
+  markClassifierSource(source);
+
+  if (tasks.length === 0) {
+    const reason = source === 'keyword' ? 'not-actionable-keyword' : 'not-actionable-ai';
+    markSkipped(reason);
+    logDecision(reason, groupName);
+    return;
+  }
+
+  for (const task of tasks) {
     markActionable();
     const sent = await sendTask(task);
     if (sent) {
       markTaskSent();
-      logDecision('task-sent', groupName);
+      logDecision('task-sent', groupName, source);
     } else {
       markIngestFailure();
-      logDecision('ingest-failed', groupName);
+      logDecision('ingest-failed', groupName, source);
     }
-  } else {
-    markSkipped('not-actionable');
-    logDecision('not-actionable', groupName);
   }
 }
 

@@ -12,6 +12,8 @@ export const status = {
   tasksSent: 0,
   messagesReceived: 0,
   actionableMessages: 0,
+  aiClassifications: 0,
+  keywordFallbacks: 0,
   ingestFailures: 0,
   selectedGroups: 0,
   lastGroupSyncAt: null,
@@ -54,6 +56,11 @@ export function markActionable() {
 
 export function markIngestFailure() {
   status.ingestFailures += 1;
+}
+
+export function markClassifierSource(source) {
+  if (source === 'keyword') status.keywordFallbacks += 1;
+  else status.aiClassifications += 1;
 }
 
 export function markSkipped(reason) {

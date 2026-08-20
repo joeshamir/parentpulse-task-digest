@@ -1,4 +1,5 @@
 import { guessCategory } from './ingest.js';
+import { classifyText } from './classify.js';
 
 // Heuristic in-memory extraction. No message text is ever persisted —
 // only the resulting task title is sent onward (zero chat-log retention).
@@ -42,7 +43,8 @@ function extractDeadline(text) {
   return null;
 }
 
-export function extractTask(text, groupName) {
+// Keyword fallback, used only when the AI classifier is unavailable.
+function keywordTask(text, groupName) {
   const trimmed = text.replace(/\s+/g, ' ').trim();
   if (trimmed.length < 8) return null;
   const lower = trimmed.toLowerCase();
@@ -50,8 +52,33 @@ export function extractTask(text, groupName) {
 
   return {
     groupName,
-    title: trimmed.slice(0, 300),
+    title: trimmed.slice(0, 120),
     category: guessCategory(trimmed),
     deadline: extractDeadline(trimmed),
   };
+}
+
+/**
+ * Returns { tasks: [...], source: 'ai' | 'keyword' }.
+ * Tasks may be empty, which means the message needs no parent action.
+ */
+export async function extractTasks(text, groupName) {
+  const trimmed = text.replace(/\s+/g, ' ').trim();
+  if (trimmed.length < 8) return { tasks: [], source: 'ai' };
+
+  const classified = await classifyText(trimmed, groupName);
+  if (classified) {
+    return {
+      source: 'ai',
+      tasks: classified.map((task) => ({
+        groupName,
+        title: task.title.slice(0, 120),
+        category: task.category || guessCategory(trimmed),
+        deadline: task.deadline || null,
+      })),
+    };
+  }
+
+  const fallback = keywordTask(trimmed, groupName);
+  return { tasks: fallback ? [fallback] : [], source: 'keyword' };
 }

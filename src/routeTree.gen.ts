@@ -16,6 +16,7 @@ import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ApiRestartBridgeRouteImport } from './routes/api/restart-bridge'
+import { Route as ApiPublicClassifyTaskRouteImport } from './routes/api/public/classify-task'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
 import { Route as ApiPublicNotifyJobsRouteImport } from './routes/api/public/notify-jobs'
 import { Route as ApiPublicVapidKeyRouteImport } from './routes/api/public/vapid-key'
@@ -56,6 +57,11 @@ const ApiRestartBridgeRoute = ApiRestartBridgeRouteImport.update({
   path: '/api/restart-bridge',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicClassifyTaskRoute = ApiPublicClassifyTaskRouteImport.update({
+  id: '/api/public/classify-task',
+  path: '/api/public/classify-task',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicIngestTaskRoute = ApiPublicIngestTaskRouteImport.update({
   id: '/api/public/ingest-task',
   path: '/api/public/ingest-task',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
+  '/api/public/classify-task': typeof ApiPublicClassifyTaskRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
   '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
+  '/api/public/classify-task': typeof ApiPublicClassifyTaskRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
   '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
+  '/api/public/classify-task': typeof ApiPublicClassifyTaskRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
   '/api/public/notify-jobs': typeof ApiPublicNotifyJobsRoute
   '/api/public/vapid-key': typeof ApiPublicVapidKeyRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/settings'
     | '/api/restart-bridge'
+    | '/api/public/classify-task'
     | '/api/public/ingest-task'
     | '/api/public/notify-jobs'
     | '/api/public/vapid-key'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/settings'
     | '/api/restart-bridge'
+    | '/api/public/classify-task'
     | '/api/public/ingest-task'
     | '/api/public/notify-jobs'
     | '/api/public/vapid-key'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/settings'
     | '/api/restart-bridge'
+    | '/api/public/classify-task'
     | '/api/public/ingest-task'
     | '/api/public/notify-jobs'
     | '/api/public/vapid-key'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   SettingsRoute: typeof SettingsRoute
   ApiRestartBridgeRoute: typeof ApiRestartBridgeRoute
+  ApiPublicClassifyTaskRoute: typeof ApiPublicClassifyTaskRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
   ApiPublicNotifyJobsRoute: typeof ApiPublicNotifyJobsRoute
   ApiPublicVapidKeyRoute: typeof ApiPublicVapidKeyRoute
@@ -224,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRestartBridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/classify-task': {
+      id: '/api/public/classify-task'
+      path: '/api/public/classify-task'
+      fullPath: '/api/public/classify-task'
+      preLoaderRoute: typeof ApiPublicClassifyTaskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ingest-task': {
       id: '/api/public/ingest-task'
       path: '/api/public/ingest-task'
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   SettingsRoute: SettingsRoute,
   ApiRestartBridgeRoute: ApiRestartBridgeRoute,
+  ApiPublicClassifyTaskRoute: ApiPublicClassifyTaskRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,
   ApiPublicNotifyJobsRoute: ApiPublicNotifyJobsRoute,
   ApiPublicVapidKeyRoute: ApiPublicVapidKeyRoute,
