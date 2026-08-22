@@ -94,9 +94,16 @@ export function TaskCard({
         <button
           onClick={onDelete}
           aria-label={t({ en: "Delete task", he: "מחיקת משימה" })}
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          // Hidden at rest so it can never bleed through a translucent
+          // (completed) card; fades in as the card is swiped.
+          style={{ opacity: Math.min(1, Math.abs(offset) / (REVEAL / 2)) }}
           className={cn(
             "absolute inset-y-0 right-0 flex w-[84px] items-center justify-center rounded-e-xl bg-destructive text-destructive-foreground",
             rtl && "rounded-e-none rounded-s-xl",
+            !dragging && "transition-opacity duration-200",
+            !open && "pointer-events-none",
           )}
         >
           <Trash2 className="h-5 w-5" />
