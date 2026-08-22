@@ -57,7 +57,8 @@ function ActionsScreen() {
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    // Warm cache already shows the rows; only spin on a cold load.
+    if (feedCache?.userId !== user.id) setLoading(true);
 
     supabase
       .from("action_items")
@@ -102,6 +103,11 @@ function ActionsScreen() {
       supabase.removeChannel(channel);
     };
   }, [user, t]);
+
+  // Keep the session cache warm for instant tab switches.
+  useEffect(() => {
+    if (user) feedCache = { userId: user.id, rows };
+  }, [user, rows]);
 
   async function toggleComplete(row: ActionItemRow) {
     const nextValue = !row.is_completed;
