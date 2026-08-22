@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Clock, GraduationCap, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
+import { Check, Clock, GraduationCap, MoreHorizontal, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
@@ -9,6 +9,7 @@ const tileIcons: Record<Task["category"], LucideIcon> = {
   school: GraduationCap,
   sports: Trophy,
   social: PartyPopper,
+  other: MoreHorizontal,
 };
 
 const REVEAL = 84;

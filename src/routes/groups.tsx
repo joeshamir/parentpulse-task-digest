@@ -84,7 +84,40 @@ function GroupsScreen() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tracked_groups", filter: `user_id=eq.${user.id}` },
-        () => window.location.reload(),
+        (payload) => {
+          // Apply changes in place — a full reload would wipe unsaved toggles.
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as {
+              id: string;
+              group_jid: string;
+              group_name: string;
+              is_tracked: boolean;
+            };
+            setLiveGroups((prev) =>
+              prev.some((g) => g.id === row.id)
+                ? prev
+                : [
+                    ...prev,
+                    {
+                      id: row.id,
+                      jid: row.group_jid,
+                      name: row.group_name,
+                      members: 0,
+                      hue: "bg-school/15 text-school",
+                    },
+                  ].sort((a, b) => a.name.localeCompare(b.name)),
+            );
+            setSelected((prev) => ({ ...prev, [row.id]: row.is_tracked }));
+          } else if (payload.eventType === "UPDATE") {
+            const row = payload.new as { id: string; group_name: string };
+            setLiveGroups((prev) =>
+              prev.map((g) => (g.id === row.id ? { ...g, name: row.group_name } : g)),
+            );
+          } else if (payload.eventType === "DELETE") {
+            const id = (payload.old as { id: string }).id;
+            setLiveGroups((prev) => prev.filter((g) => g.id !== id));
+          }
+        },
       )
       .subscribe();
 
