@@ -33,12 +33,17 @@ export const Route = createFileRoute("/")({
   component: ActionsScreen,
 });
 
+// Session cache so switching back to this tab renders instantly
+// while fresh data loads quietly in the background.
+let feedCache: { userId: string; rows: ActionItemRow[] } | null = null;
+
 function ActionsScreen() {
   const { t, lang } = useLang();
   const { user, loading: authLoading } = useAuth();
+  const cached = user && feedCache?.userId === user.id ? feedCache : null;
   const [filter, setFilter] = useState<string>("all");
-  const [rows, setRows] = useState<ActionItemRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<ActionItemRow[]>(cached?.rows ?? []);
+  const [loading, setLoading] = useState(Boolean(user) && !cached);
   // Local completion state, used only for the signed-out demo feed.
   const [demoDone, setDemoDone] = useState<string[]>([]);
   // Cards playing their exit animation, and freshly-arrived cards to ease in.
