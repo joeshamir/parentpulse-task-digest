@@ -22,12 +22,12 @@ export function MobileShell({ children }: { children: ReactNode }) {
         void router.preloadRoute({ to: tab.to }).catch(() => undefined);
       }
     };
-    if ("requestIdleCallback" in window) {
+    if (typeof window.requestIdleCallback === "function") {
       const id = window.requestIdleCallback(preload, { timeout: 1500 });
       return () => window.cancelIdleCallback(id);
     }
-    const id = window.setTimeout(preload, 300);
-    return () => window.clearTimeout(id);
+    const id = setTimeout(preload, 300);
+    return () => clearTimeout(id);
   }, [router]);
 
   return (
