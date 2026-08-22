@@ -41,6 +41,9 @@ function ActionsScreen() {
   const [loading, setLoading] = useState(false);
   // Local completion state, used only for the signed-out demo feed.
   const [demoDone, setDemoDone] = useState<string[]>([]);
+  // Cards playing their exit animation, and freshly-arrived cards to ease in.
+  const [leavingIds, setLeavingIds] = useState<string[]>([]);
+  const [freshIds, setFreshIds] = useState<string[]>([]);
 
   // Load the signed-in user's action items and keep them live.
   useEffect(() => {
@@ -80,6 +83,11 @@ function ActionsScreen() {
             // Newest tasks go to the top of the feed.
             return exists ? prev.map((r) => (r.id === next.id ? next : r)) : [next, ...prev];
           });
+          if (payload.eventType === "INSERT") {
+            const id = (payload.new as ActionItemRow).id;
+            setFreshIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+            setTimeout(() => setFreshIds((prev) => prev.filter((x) => x !== id)), 800);
+          }
         },
       )
       .subscribe();
@@ -109,8 +117,12 @@ function ActionsScreen() {
   }
 
   async function deleteTask(row: ActionItemRow) {
+    // Play the exit animation before removing the card.
+    setLeavingIds((prev) => [...prev, row.id]);
     const snapshot = rows;
+    await new Promise((resolve) => setTimeout(resolve, 300));
     setRows((prev) => prev.filter((r) => r.id !== row.id));
+    setLeavingIds((prev) => prev.filter((id) => id !== row.id));
     const { error } = await supabase.from("action_items").delete().eq("id", row.id);
     if (error) {
       setRows(snapshot);
