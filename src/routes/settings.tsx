@@ -45,13 +45,24 @@ export const Route = createFileRoute("/settings")({
   component: SettingsScreen,
 });
 
+// Session cache so switching back to this tab renders instantly.
+let settingsCache: {
+  userId: string;
+  connection: string;
+  qrCode: string | null;
+  lastSeen: number | null;
+  notifyOn: boolean;
+  sendHour: number;
+} | null = null;
+
 function SettingsScreen() {
   const { t, lang, toggle, dir } = useLang();
   const { user, signOut } = useAuth();
 
-  const [connection, setConnection] = useState("pending_qr");
-  const [qrCode, setQrCode] = useState<string | null>(null);
-  const [lastSeen, setLastSeen] = useState<number | null>(null);
+  const cached = user && settingsCache?.userId === user.id ? settingsCache : null;
+  const [connection, setConnection] = useState(cached?.connection ?? "pending_qr");
+  const [qrCode, setQrCode] = useState<string | null>(cached?.qrCode ?? null);
+  const [lastSeen, setLastSeen] = useState<number | null>(cached?.lastSeen ?? null);
   const [now, setNow] = useState(() => Date.now());
   const [testing, setTesting] = useState(false);
   const [requestingReconnect, setRequestingReconnect] = useState(false);
@@ -61,8 +72,8 @@ function SettingsScreen() {
   const [restarting, setRestarting] = useState(false);
 
   // Notification preferences
-  const [notifyOn, setNotifyOn] = useState(false);
-  const [sendHour, setSendHour] = useState(8);
+  const [notifyOn, setNotifyOn] = useState(cached?.notifyOn ?? false);
+  const [sendHour, setSendHour] = useState(cached?.sendHour ?? 8);
   const [notifyBusy, setNotifyBusy] = useState(false);
   const [notifyBlocked, setNotifyBlocked] = useState(false);
   const [testingPush, setTestingPush] = useState(false);
@@ -123,6 +134,13 @@ function SettingsScreen() {
       void supabase.removeChannel(channel);
     };
   }, [user]);
+
+  // Keep the session cache warm for instant tab switches.
+  useEffect(() => {
+    if (user) {
+      settingsCache = { userId: user.id, connection, qrCode, lastSeen, notifyOn, sendHour };
+    }
+  }, [user, connection, qrCode, lastSeen, notifyOn, sendHour]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
