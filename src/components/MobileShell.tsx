@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { CheckCircle2, Settings, Users } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLang } from "@/lib/lang";
@@ -11,6 +11,7 @@ const tabs = [
 
 export function MobileShell({ children }: { children: ReactNode }) {
   const { t, lang, toggle, dir } = useLang();
+  const pathname = useLocation({ select: (location) => location.pathname });
 
   return (
     <div dir={dir} className="app-canvas min-h-screen text-foreground">
@@ -35,7 +36,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
           </button>
         </div>
 
-        <main className="flex-1 pb-28">{children}</main>
+        <main key={pathname} className="animate-page-enter flex-1 pb-28">{children}</main>
 
         <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto w-full max-w-md px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <ul className="grid grid-cols-3 gap-1 rounded-2xl border border-border bg-card/80 p-1.5 shadow-[0_8px_24px_-16px_oklch(0.2_0.05_280/0.5)] backdrop-blur-xl">
