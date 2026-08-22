@@ -12,6 +12,23 @@ const tabs = [
 export function MobileShell({ children }: { children: ReactNode }) {
   const { t, lang, toggle, dir } = useLang();
   const pathname = useLocation({ select: (location) => location.pathname });
+  const router = useRouter();
+
+  // Warm the other tabs' code in the background so switching is instant.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const preload = () => {
+      for (const tab of tabs) {
+        void router.preloadRoute({ to: tab.to }).catch(() => undefined);
+      }
+    };
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(preload, { timeout: 1500 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = window.setTimeout(preload, 300);
+    return () => window.clearTimeout(id);
+  }, [router]);
 
   return (
     <div dir={dir} className="app-canvas min-h-screen text-foreground">
