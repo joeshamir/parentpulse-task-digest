@@ -14,7 +14,7 @@ const categoryMap: Record<string, Task["category"]> = {
   School: "school",
   Sports: "sports",
   Social: "social",
-  Other: "social",
+  Other: "other",
 };
 
 const categoryLabels: Record<string, { en: string; he: string }> = {
@@ -58,7 +58,7 @@ function formatAdded(createdAt: string) {
 export function rowToTask(row: ActionItemRow): Task {
   return {
     id: row.id,
-    category: categoryMap[row.category] ?? "social",
+    category: categoryMap[row.category] ?? "other",
     categoryLabel: categoryLabels[row.category] ?? categoryLabels["Other"]!,
     title: { en: row.title, he: row.title },
     due: formatDeadline(row.deadline),
