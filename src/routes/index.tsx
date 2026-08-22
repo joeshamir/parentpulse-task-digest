@@ -216,20 +216,30 @@ function ActionsScreen() {
         </div>
       )}
 
-      <section className="mt-4 space-y-3 px-5">
+      <section key={filter} className="animate-page-enter mt-4 space-y-3 px-5">
         {signedIn
           ? rows
               .map((row) => ({ row, task: rowToTask(row) }))
               .filter(({ task }) => filter === "all" || task.category === filter)
               .map(({ row, task }) => (
-                <TaskCard
+                <div
                   key={row.id}
-                  task={task}
-                  done={row.is_completed}
-                  onToggle={() => toggleComplete(row)}
-                  onDelete={() => deleteTask(row)}
-
-                />
+                  className={cn(
+                    "grid transition-all duration-300 ease-out",
+                    leavingIds.includes(row.id) ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
+                  )}
+                >
+                  <div className="min-h-0 overflow-hidden">
+                    <TaskCard
+                      task={task}
+                      done={row.is_completed}
+                      onToggle={() => toggleComplete(row)}
+                      onDelete={() => deleteTask(row)}
+                      leaving={leavingIds.includes(row.id)}
+                      entering={freshIds.includes(row.id)}
+                    />
+                  </div>
+                </div>
               ))
           : visible.map((task) => (
               <TaskCard
