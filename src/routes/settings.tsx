@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -57,7 +57,9 @@ let settingsCache: {
 
 function SettingsScreen() {
   const { t, lang, toggle, dir } = useLang();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const signedOut = !authLoading && !user;
 
   const cached = user && settingsCache?.userId === user.id ? settingsCache : null;
   const [connection, setConnection] = useState(cached?.connection ?? "pending_qr");
@@ -167,6 +169,18 @@ function SettingsScreen() {
     return () => clearTimeout(timer);
   }, [awaitingQrSince, autoRetried]);
 
+  // Actions that need an account: say what's needed and go to sign-in,
+  // instead of dead-ending on a bare toast.
+  function requireSignIn() {
+    toast(
+      t({
+        en: "Sign in to manage your connector — taking you to sign in.",
+        he: "יש להתחבר כדי לנהל את המחבר — מעבירים אתכם למסך הכניסה.",
+      }),
+    );
+    void navigate({ to: "/auth" });
+  }
+
   async function savePrefs(patch: { daily_summary_enabled?: boolean; send_hour_local?: number }) {
     if (!user) return false;
     const { error } = await supabase.from("notification_prefs").upsert(
@@ -184,7 +198,7 @@ function SettingsScreen() {
 
   async function toggleNotifications(next: boolean) {
     if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      requireSignIn();
       return;
     }
     setNotifyBusy(true);
@@ -279,7 +293,7 @@ function SettingsScreen() {
 
   async function sendTestTask() {
     if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      requireSignIn();
       return;
     }
     setTesting(true);
@@ -302,7 +316,7 @@ function SettingsScreen() {
 
   async function requestReconnect(silent = false) {
     if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      if (!silent) requireSignIn();
       return;
     }
     setRequestingReconnect(true);
@@ -331,22 +345,14 @@ function SettingsScreen() {
   }
 
   async function restartBridge() {
-    if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+    // The live session is the source of truth — the auth context can lag
+    // behind it, so don't give up just because `user` is momentarily null.
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session?.access_token) {
+      requireSignIn();
       return;
     }
     setRestarting(true);
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session?.access_token) {
-      setRestarting(false);
-      toast.error(
-        t({
-          en: "Could not get your session. Please sign in again.",
-          he: "לא ניתן לקבל את הסשן. אנא התחברו שוב.",
-        }),
-      );
-      return;
-    }
     try {
       const res = await fetch("/api/restart-bridge", {
         method: "POST",
@@ -423,27 +429,48 @@ function SettingsScreen() {
                 {t({ en: "WhatsApp Bridge", he: "גשר וואטסאפ" })}
               </p>
               <p className="mt-0.5 text-[12px] font-medium text-muted-foreground">
-                {live
-                  ? t({ en: "Connected", he: "מחובר" })
-                  : bridgeOffline
-                    ? t({ en: "Connector offline", he: "המחבר לא פעיל" })
-                    : t({ en: "Waiting for pairing", he: "ממתין לצימוד" })}
-                {lastActivity ? ` · ${lastActivity}` : ""}
+                {signedOut || authLoading
+                  ? t({ en: "Sign in to manage the connector", he: "יש להתחבר כדי לנהל את המחבר" })
+                  : live
+                    ? t({ en: "Connected", he: "מחובר" })
+                    : bridgeOffline
+                      ? t({ en: "Connector offline", he: "המחבר לא פעיל" })
+                      : t({ en: "Waiting for pairing", he: "ממתין לצימוד" })}
+                {!signedOut && lastActivity ? ` · ${lastActivity}` : ""}
               </p>
             </div>
-            <button
-              onClick={() => void requestReconnect()}
-              disabled={requestingReconnect}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
-            >
-              <QrCode className="h-3.5 w-3.5" />
-              {requestingReconnect
-                ? t({ en: "Requesting…", he: "מבקשים…" })
-                : t({ en: "Re-scan QR", he: "סריקת QR" })}
-            </button>
+            {!signedOut && !authLoading && (
+              <button
+                onClick={() => void requestReconnect()}
+                disabled={requestingReconnect}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground disabled:opacity-60"
+              >
+                <QrCode className="h-3.5 w-3.5" />
+                {requestingReconnect
+                  ? t({ en: "Requesting…", he: "מבקשים…" })
+                  : t({ en: "Re-scan QR", he: "סריקת QR" })}
+              </button>
+            )}
           </div>
 
-          {bridgeOffline && (
+          {signedOut && (
+            <div className="mt-4 rounded-xl border border-border bg-background p-4">
+              <p className="text-[12px] font-medium leading-relaxed text-muted-foreground">
+                {t({
+                  en: "You're not signed in, so the connector status and controls aren't available.",
+                  he: "אתם לא מחוברים, ולכן סטטוס המחבר והפעולות אינם זמינים.",
+                })}
+              </p>
+              <Link
+                to="/auth"
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-foreground px-3 py-2 text-[12px] font-semibold text-background transition-opacity hover:opacity-90"
+              >
+                {t({ en: "Sign in", he: "כניסה" })}
+              </Link>
+            </div>
+          )}
+
+          {!signedOut && !authLoading && bridgeOffline && (
             <div className="mt-4 rounded-xl border border-warning/40 bg-warning/10 p-4">
               <p className="flex items-start gap-2 text-[12px] font-semibold leading-relaxed text-foreground">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
