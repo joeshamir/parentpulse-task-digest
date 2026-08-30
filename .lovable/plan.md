@@ -1,31 +1,28 @@
-# Notify me when new groups are discovered
+# Fix the confusing "Sign in first" message on connector restart
 
-New groups already appear in the Groups list automatically (the worker re-syncs every 60s and the app updates live). What's missing is an alert. This plan adds an opt-in "new group" notification: a push notification when the app is closed, and a toast when it's open. Groups still start untracked — nothing is listened to without your consent.
+## What's happening
 
-## What you'll see
+On the Settings screen, the orange "Restart connector" button is shown whenever the bridge looks offline. But the bridge also *looks* offline when you're not signed in (or your session is still loading): no session data is fetched, `lastSeen` stays empty, and the "Connector offline" warning card appears anyway.
 
-- **Settings**: a new toggle, "New group alerts" / "התראות על קבוצות חדשות", next to the daily-summary toggle. Off by default (opt-in). Requires push notifications to be enabled on the device, same as daily summaries.
-- **Push notification** (app closed): when the bridge discovers a group it has never seen, e.g. "קבוצה חדשה נמצאה · New group found: כיתה ד2" — tapping it opens the Groups tab so you can enable it.
-- **Toast** (app open on Groups): a small "New group found" toast as the row slides in — no reload.
+Tapping the button then hits the `if (!user)` guard in `restartBridge()` and shows the bare toast "יש להתחבר תחילה" ("Sign in first") — with no explanation and no way forward. That's the confusing state in your screenshot.
 
-## Implementation
+## The fix
 
-1. **Migration** — add `new_group_alerts_enabled boolean not null default false` to `public.notification_prefs` (no new table; the existing RLS/grants cover it).
+1. **Don't offer actions that can't work.** When there is no signed-in user (or the session is still loading), the WhatsApp Bridge card no longer shows the offline warning and restart/re-scan buttons. Instead it shows a calm, explicit state: "Sign in to manage the connector" with a button that takes you to the sign-in screen.
 
-2. **Shared push delivery helper** — extract `sendPush` (VAPID signing, subscription fetch, dead-endpoint pruning) from `src/routes/api/public/notify-jobs.ts` into `src/lib/push-delivery.server.ts`, so both routes reuse it. `notify-jobs` behavior stays identical.
+2. **Make the restart button resilient.** `restartBridge()` currently gives up if the auth context hasn't delivered a user yet, even when a valid session exists. It will fall back to `supabase.auth.getSession()` — if a session is found, the restart proceeds instead of erroring.
 
-3. **Detection in `src/routes/api/public/worker-groups.ts`** — the group upsert already uses `ignoreDuplicates`; chain `.select('group_name')` so the response contains **only newly inserted rows** (duplicates are skipped, so returned rows = genuinely new groups). If any:
-   - Skip when the user had **zero** group rows before this sync (first-ever sync after pairing — otherwise you'd get a flood of alerts for every group you're already in).
-   - Check `notification_prefs.new_group_alerts_enabled`; if on, send one push per new group (max 3), or a single "N new groups found" summary push when more arrive at once.
-   - Push links to `/groups` and uses a new `parentpulse-groups` tag.
+3. **Clearer wording when sign-in genuinely is required.** Replace the bare "Sign in first" toast (here and on the other Settings actions: notifications toggle, test task, re-scan QR) with a message that says what to do, e.g. "Sign in to manage the connector — taking you to sign in", and navigate to the auth screen instead of dead-ending on a toast.
 
-4. **Settings UI (`src/routes/settings.tsx`)** — add the toggle, persisted to `notification_prefs`, bilingual strings through `t()`, matching the existing daily-summary card style. Disabled with a hint when no push subscription exists yet.
+## Technical details
 
-5. **Groups UI (`src/routes/groups.tsx`)** — in the existing realtime INSERT handler, fire a bilingual sonner toast (`New group found: {name}`) when a row arrives while the app is open. Rows continue to appear untracked.
+- `src/routes/settings.tsx`:
+  - Pull `loading` from `useAuth()`; derive `signedOut = !loading && !user`.
+  - Gate the bridge card body: `signedOut` (or loading) → sign-in prompt + link to `/auth`; otherwise existing offline/QR/connected states.
+  - `restartBridge()`: replace the early `!user` return with `getSession()` as the source of truth; only show the sign-in message when no session token exists.
+  - Update the "Sign in first" toasts in `toggleNotifications`, `sendTestTask`, `requestReconnect` to the actionable message + `navigate('/auth')`.
+- No backend, worker, or schema changes.
 
-## Technical notes
+## Result
 
-- Files: new migration, new `src/lib/push-delivery.server.ts`, edits to `src/routes/api/public/notify-jobs.ts`, `src/routes/api/public/worker-groups.ts`, `src/routes/settings.tsx`, `src/routes/groups.tsx`, and `src/lib/lang.tsx` strings as needed.
-- No worker/Railway changes: the worker's 60-second sync already sends the full list; dedupe happens server-side via the `(user_id, group_jid)` unique constraint.
-- Security: `worker-groups` stays worker-token authenticated; push sending reuses the existing VAPID-secrets-in-cloud pattern; the pref is user-scoped via existing RLS.
-- Edge case: a group the worker re-discovers after being deleted from the app will count as "new" again and may re-alert — acceptable for MVP.
+The restart button can no longer lead to a dead-end toast: you either get a working restart, or a clear sign-in prompt that takes you to the sign-in screen.
