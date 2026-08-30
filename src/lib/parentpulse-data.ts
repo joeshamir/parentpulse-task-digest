@@ -1,4 +1,4 @@
-export type Category = "school" | "sports" | "social";
+export type Category = "school" | "sports" | "social" | "other";
 
 export type Task = {
   id: string;
@@ -19,6 +19,7 @@ export const categoryFilters: {
   { key: "school", label: { en: "School", he: "בית ספר" } },
   { key: "sports", label: { en: "Sports", he: "ספורט" } },
   { key: "social", label: { en: "Social", he: "חברתי" } },
+  { key: "other", label: { en: "Other", he: "אחר" } },
 ];
 
 export const tasks: Task[] = [

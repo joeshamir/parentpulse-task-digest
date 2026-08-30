@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Clock, GraduationCap, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
+import { Check, Clock, GraduationCap, MoreHorizontal, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
@@ -9,6 +9,7 @@ const tileIcons: Record<Task["category"], LucideIcon> = {
   school: GraduationCap,
   sports: Trophy,
   social: PartyPopper,
+  other: MoreHorizontal,
 };
 
 const REVEAL = 84;
@@ -18,11 +19,15 @@ export function TaskCard({
   done,
   onToggle,
   onDelete,
+  leaving = false,
+  entering = false,
 }: {
   task: Task;
   done: boolean;
   onToggle: () => void;
   onDelete?: () => void;
+  leaving?: boolean;
+  entering?: boolean;
 }) {
   const { t, lang } = useLang();
   const Icon = tileIcons[task.category];
@@ -76,14 +81,29 @@ export function TaskCard({
   }
 
   return (
-    <div ref={rootRef} className="relative overflow-hidden rounded-xl">
+    <div
+      ref={rootRef}
+      className={cn(
+        "relative overflow-hidden rounded-xl",
+        leaving &&
+          "pointer-events-none -translate-x-6 opacity-0 transition-all duration-300 ease-in",
+        entering && !leaving && "animate-card-enter",
+      )}
+    >
       {onDelete && (
         <button
           onClick={onDelete}
           aria-label={t({ en: "Delete task", he: "מחיקת משימה" })}
+          aria-hidden={!open}
+          tabIndex={open ? 0 : -1}
+          // Hidden at rest so it can never bleed through a translucent
+          // (completed) card; fades in as the card is swiped.
+          style={{ opacity: Math.min(1, Math.abs(offset) / (REVEAL / 2)) }}
           className={cn(
             "absolute inset-y-0 right-0 flex w-[84px] items-center justify-center rounded-e-xl bg-destructive text-destructive-foreground",
             rtl && "rounded-e-none rounded-s-xl",
+            !dragging && "transition-opacity duration-200",
+            !open && "pointer-events-none",
           )}
         >
           <Trash2 className="h-5 w-5" />
@@ -116,7 +136,7 @@ export function TaskCard({
             </p>
             <h3
               className={cn(
-                "mt-1 text-[16px] font-bold leading-snug tracking-tight text-card-foreground",
+                "mt-1 text-[16px] font-bold leading-snug tracking-tight text-card-foreground transition-colors duration-300",
                 done && "text-muted-foreground line-through",
               )}
             >
@@ -138,7 +158,7 @@ export function TaskCard({
                 </span>
               )}
               {done && (
-                <span className="rounded-md border border-info-border bg-info px-1.5 py-0.5 text-[11px] font-semibold text-info-foreground">
+                <span className="animate-in fade-in rounded-md border border-info-border bg-info px-1.5 py-0.5 text-[11px] font-semibold text-info-foreground duration-300">
                   {t({ en: "Done", he: "בוצע" })}
                 </span>
               )}

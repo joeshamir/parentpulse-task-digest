@@ -33,14 +33,22 @@ export const Route = createFileRoute("/")({
   component: ActionsScreen,
 });
 
+// Session cache so switching back to this tab renders instantly
+// while fresh data loads quietly in the background.
+let feedCache: { userId: string; rows: ActionItemRow[] } | null = null;
+
 function ActionsScreen() {
   const { t, lang } = useLang();
   const { user, loading: authLoading } = useAuth();
+  const cached = user && feedCache?.userId === user.id ? feedCache : null;
   const [filter, setFilter] = useState<string>("all");
-  const [rows, setRows] = useState<ActionItemRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState<ActionItemRow[]>(cached?.rows ?? []);
+  const [loading, setLoading] = useState(Boolean(user) && !cached);
   // Local completion state, used only for the signed-out demo feed.
   const [demoDone, setDemoDone] = useState<string[]>([]);
+  // Cards playing their exit animation, and freshly-arrived cards to ease in.
+  const [leavingIds, setLeavingIds] = useState<string[]>([]);
+  const [freshIds, setFreshIds] = useState<string[]>([]);
 
   // Load the signed-in user's action items and keep them live.
   useEffect(() => {
@@ -49,7 +57,8 @@ function ActionsScreen() {
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    // Warm cache already shows the rows; only spin on a cold load.
+    if (feedCache?.userId !== user.id) setLoading(true);
 
     supabase
       .from("action_items")
@@ -80,6 +89,11 @@ function ActionsScreen() {
             // Newest tasks go to the top of the feed.
             return exists ? prev.map((r) => (r.id === next.id ? next : r)) : [next, ...prev];
           });
+          if (payload.eventType === "INSERT") {
+            const id = (payload.new as ActionItemRow).id;
+            setFreshIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+            setTimeout(() => setFreshIds((prev) => prev.filter((x) => x !== id)), 800);
+          }
         },
       )
       .subscribe();
@@ -89,6 +103,11 @@ function ActionsScreen() {
       supabase.removeChannel(channel);
     };
   }, [user, t]);
+
+  // Keep the session cache warm for instant tab switches.
+  useEffect(() => {
+    if (user) feedCache = { userId: user.id, rows };
+  }, [user, rows]);
 
   async function toggleComplete(row: ActionItemRow) {
     const nextValue = !row.is_completed;
@@ -109,8 +128,12 @@ function ActionsScreen() {
   }
 
   async function deleteTask(row: ActionItemRow) {
+    // Play the exit animation before removing the card.
+    setLeavingIds((prev) => [...prev, row.id]);
     const snapshot = rows;
+    await new Promise((resolve) => setTimeout(resolve, 300));
     setRows((prev) => prev.filter((r) => r.id !== row.id));
+    setLeavingIds((prev) => prev.filter((id) => id !== row.id));
     const { error } = await supabase.from("action_items").delete().eq("id", row.id);
     if (error) {
       setRows(snapshot);
@@ -204,20 +227,30 @@ function ActionsScreen() {
         </div>
       )}
 
-      <section className="mt-4 space-y-3 px-5">
+      <section key={filter} className="animate-page-enter mt-4 space-y-3 px-5">
         {signedIn
           ? rows
               .map((row) => ({ row, task: rowToTask(row) }))
               .filter(({ task }) => filter === "all" || task.category === filter)
               .map(({ row, task }) => (
-                <TaskCard
+                <div
                   key={row.id}
-                  task={task}
-                  done={row.is_completed}
-                  onToggle={() => toggleComplete(row)}
-                  onDelete={() => deleteTask(row)}
-
-                />
+                  className={cn(
+                    "grid transition-all duration-300 ease-out",
+                    leavingIds.includes(row.id) ? "grid-rows-[0fr]" : "grid-rows-[1fr]",
+                  )}
+                >
+                  <div className="min-h-0 overflow-hidden">
+                    <TaskCard
+                      task={task}
+                      done={row.is_completed}
+                      onToggle={() => toggleComplete(row)}
+                      onDelete={() => deleteTask(row)}
+                      leaving={leavingIds.includes(row.id)}
+                      entering={freshIds.includes(row.id)}
+                    />
+                  </div>
+                </div>
               ))
           : visible.map((task) => (
               <TaskCard

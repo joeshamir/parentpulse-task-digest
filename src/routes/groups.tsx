@@ -30,6 +30,12 @@ export const Route = createFileRoute("/groups")({
   component: GroupsScreen,
 });
 
+type LiveGroup = { id: string; jid: string; name: string; members: number; hue: string };
+
+// Session cache so switching back to this tab renders instantly.
+let groupsCache: { userId: string; liveGroups: LiveGroup[]; selected: Record<string, boolean> } | null =
+  null;
+
 function initials(name: string) {
   return name
     .replace(/[^\p{L}\p{N} ]/gu, " ")
@@ -43,13 +49,14 @@ function initials(name: string) {
 function GroupsScreen() {
   const { t } = useLang();
   const { user } = useAuth();
+  const cached = user && groupsCache?.userId === user.id ? groupsCache : null;
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(demoGroups.map((g) => [g.id, isRecommended(g)])),
+  const [selected, setSelected] = useState<Record<string, boolean>>(
+    () =>
+      cached?.selected ??
+      Object.fromEntries(demoGroups.map((g) => [g.id, isRecommended(g)])),
   );
-  const [liveGroups, setLiveGroups] = useState<
-    Array<{ id: string; jid: string; name: string; members: number; hue: string }>
-  >([]);
+  const [liveGroups, setLiveGroups] = useState<LiveGroup[]>(cached?.liveGroups ?? []);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -84,7 +91,40 @@ function GroupsScreen() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "tracked_groups", filter: `user_id=eq.${user.id}` },
-        () => window.location.reload(),
+        (payload) => {
+          // Apply changes in place — a full reload would wipe unsaved toggles.
+          if (payload.eventType === "INSERT") {
+            const row = payload.new as {
+              id: string;
+              group_jid: string;
+              group_name: string;
+              is_tracked: boolean;
+            };
+            setLiveGroups((prev) =>
+              prev.some((g) => g.id === row.id)
+                ? prev
+                : [
+                    ...prev,
+                    {
+                      id: row.id,
+                      jid: row.group_jid,
+                      name: row.group_name,
+                      members: 0,
+                      hue: "bg-school/15 text-school",
+                    },
+                  ].sort((a, b) => a.name.localeCompare(b.name)),
+            );
+            setSelected((prev) => ({ ...prev, [row.id]: row.is_tracked }));
+          } else if (payload.eventType === "UPDATE") {
+            const row = payload.new as { id: string; group_name: string };
+            setLiveGroups((prev) =>
+              prev.map((g) => (g.id === row.id ? { ...g, name: row.group_name } : g)),
+            );
+          } else if (payload.eventType === "DELETE") {
+            const id = (payload.old as { id: string }).id;
+            setLiveGroups((prev) => prev.filter((g) => g.id !== id));
+          }
+        },
       )
       .subscribe();
 
@@ -93,6 +133,11 @@ function GroupsScreen() {
       void supabase.removeChannel(channel);
     };
   }, [user, t]);
+
+  // Keep the session cache warm for instant tab switches.
+  useEffect(() => {
+    if (user) groupsCache = { userId: user.id, liveGroups, selected };
+  }, [user, liveGroups, selected]);
 
   const groups = user
     ? liveGroups.map((group) => ({
