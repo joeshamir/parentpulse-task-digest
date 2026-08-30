@@ -345,22 +345,14 @@ function SettingsScreen() {
   }
 
   async function restartBridge() {
-    if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+    // The live session is the source of truth — the auth context can lag
+    // behind it, so don't give up just because `user` is momentarily null.
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !sessionData.session?.access_token) {
+      requireSignIn();
       return;
     }
     setRestarting(true);
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData.session?.access_token) {
-      setRestarting(false);
-      toast.error(
-        t({
-          en: "Could not get your session. Please sign in again.",
-          he: "לא ניתן לקבל את הסשן. אנא התחברו שוב.",
-        }),
-      );
-      return;
-    }
     try {
       const res = await fetch("/api/restart-bridge", {
         method: "POST",
