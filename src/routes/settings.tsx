@@ -169,6 +169,18 @@ function SettingsScreen() {
     return () => clearTimeout(timer);
   }, [awaitingQrSince, autoRetried]);
 
+  // Actions that need an account: say what's needed and go to sign-in,
+  // instead of dead-ending on a bare toast.
+  function requireSignIn() {
+    toast(
+      t({
+        en: "Sign in to manage your connector — taking you to sign in.",
+        he: "יש להתחבר כדי לנהל את המחבר — מעבירים אתכם למסך הכניסה.",
+      }),
+    );
+    void navigate({ to: "/auth" });
+  }
+
   async function savePrefs(patch: { daily_summary_enabled?: boolean; send_hour_local?: number }) {
     if (!user) return false;
     const { error } = await supabase.from("notification_prefs").upsert(
@@ -186,7 +198,7 @@ function SettingsScreen() {
 
   async function toggleNotifications(next: boolean) {
     if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      requireSignIn();
       return;
     }
     setNotifyBusy(true);
@@ -281,7 +293,7 @@ function SettingsScreen() {
 
   async function sendTestTask() {
     if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      requireSignIn();
       return;
     }
     setTesting(true);
@@ -304,7 +316,7 @@ function SettingsScreen() {
 
   async function requestReconnect(silent = false) {
     if (!user) {
-      toast(t({ en: "Sign in first.", he: "יש להתחבר תחילה." }));
+      if (!silent) requireSignIn();
       return;
     }
     setRequestingReconnect(true);
