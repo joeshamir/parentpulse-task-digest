@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -57,7 +57,9 @@ let settingsCache: {
 
 function SettingsScreen() {
   const { t, lang, toggle, dir } = useLang();
-  const { user, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const signedOut = !authLoading && !user;
 
   const cached = user && settingsCache?.userId === user.id ? settingsCache : null;
   const [connection, setConnection] = useState(cached?.connection ?? "pending_qr");
