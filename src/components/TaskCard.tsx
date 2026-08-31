@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Clock, GraduationCap, MoreHorizontal, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  MoreHorizontal,
+  PartyPopper,
+  Plus,
+  Trash2,
+  Trophy,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { toast } from "sonner";
 import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
