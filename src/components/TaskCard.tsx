@@ -174,7 +174,29 @@ export function TaskCard({
           done && "bg-muted/40",
         )}
       >
-        <div className="flex items-start gap-3">
+        <div
+          {...(canOpen
+            ? {
+                role: "button" as const,
+                tabIndex: 0,
+                onClick: openInWhatsApp,
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openInWhatsApp();
+                  }
+                },
+                "aria-label": t({
+                  en: "Open this group in WhatsApp",
+                  he: "פתיחת הקבוצה בוואטסאפ",
+                }),
+              }
+            : {})}
+          className={cn(
+            "flex items-start gap-3 rounded-lg text-start",
+            canOpen && "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          )}
+        >
           <span
             aria-hidden
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary"
@@ -183,8 +205,14 @@ export function TaskCard({
           </span>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              {t(task.source)}
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="truncate">{t(task.source)}</span>
+              {canOpen &&
+                (rtl ? (
+                  <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-primary" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary" />
+                ))}
             </p>
             <h3
               className={cn(
