@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Clock, GraduationCap, MoreHorizontal, PartyPopper, Plus, Trash2, Trophy } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  GraduationCap,
+  MoreHorizontal,
+  PartyPopper,
+  Plus,
+  Trash2,
+  Trophy,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { toast } from "sonner";
 import { useLang } from "@/lib/lang";
 import type { Task } from "@/lib/parentpulse-data";
 import { cn } from "@/lib/utils";
@@ -37,6 +49,8 @@ export function TaskCard({
   const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // True right after a swipe, so the closing tap doesn't also open WhatsApp.
+  const movedRef = useRef(false);
 
   // The delete panel sits on the trailing edge in LTR and the leading (right)
   // edge in RTL — in both cases it is on the right, so the card always slides left.
@@ -77,7 +91,45 @@ export function TaskCard({
     if (!dragging) return;
     setDragging(false);
     start.current = null;
+    const moved = Math.abs(offset) > 6;
+    movedRef.current = moved;
     setOffset(Math.abs(offset) > REVEAL / 2 ? REVEAL * dir : 0);
+  }
+
+  const canOpen = Boolean(task.groupJid);
+  const isMobile =
+    typeof navigator !== "undefined" && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  function openInWhatsApp() {
+    // Ignore the tap that ends a swipe, or a tap while the delete panel is open.
+    if (movedRef.current || open) {
+      movedRef.current = false;
+      return;
+    }
+    if (!task.groupJid) return;
+
+    if (!isMobile) {
+      void navigator.clipboard?.writeText(task.groupName ?? "").catch(() => {});
+      toast.info(
+        t({
+          en: "Group chats open in WhatsApp on your phone. Group name copied.",
+          he: "צ'אטים קבוצתיים נפתחים בוואטסאפ בטלפון. שם הקבוצה הועתק.",
+        }),
+      );
+      return;
+    }
+
+    let left = false;
+    const onHide = () => {
+      left = true;
+    };
+    document.addEventListener("visibilitychange", onHide, { once: true });
+    window.location.href = `whatsapp://chat?jid=${encodeURIComponent(task.groupJid)}`;
+    // If the deep link didn't take, at least land the user inside WhatsApp.
+    window.setTimeout(() => {
+      document.removeEventListener("visibilitychange", onHide);
+      if (!left && !document.hidden) window.location.href = "whatsapp://";
+    }, 1200);
   }
 
   return (
@@ -122,7 +174,29 @@ export function TaskCard({
           done && "bg-muted/40",
         )}
       >
-        <div className="flex items-start gap-3">
+        <div
+          {...(canOpen
+            ? {
+                role: "button" as const,
+                tabIndex: 0,
+                onClick: openInWhatsApp,
+                onKeyDown: (e: React.KeyboardEvent) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    openInWhatsApp();
+                  }
+                },
+                "aria-label": t({
+                  en: "Open this group in WhatsApp",
+                  he: "פתיחת הקבוצה בוואטסאפ",
+                }),
+              }
+            : {})}
+          className={cn(
+            "flex items-start gap-3 rounded-lg text-start",
+            canOpen && "cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+          )}
+        >
           <span
             aria-hidden
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-primary/20 bg-primary/8 text-primary"
@@ -131,8 +205,14 @@ export function TaskCard({
           </span>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              {t(task.source)}
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="truncate">{t(task.source)}</span>
+              {canOpen &&
+                (rtl ? (
+                  <ChevronLeft className="h-3.5 w-3.5 shrink-0 text-primary" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-primary" />
+                ))}
             </p>
             <h3
               className={cn(

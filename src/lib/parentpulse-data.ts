@@ -9,6 +9,10 @@ export type Task = {
   urgent: boolean;
   source: { en: string; he: string };
   added?: { en: string; he: string };
+  /** WhatsApp group address, used to open the group in WhatsApp. */
+  groupJid?: string | null;
+  /** Plain group name, used as a copy fallback on desktop. */
+  groupName?: string;
 };
 
 export const categoryFilters: {
