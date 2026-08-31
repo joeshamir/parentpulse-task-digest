@@ -78,6 +78,7 @@ export const Route = createFileRoute('/api/public/ingest-task')({
           .insert({
             user_id: userId,
             group_name: data.group_name,
+            group_jid: data.group_jid || null,
             title: data.title,
             category,
             deadline,
