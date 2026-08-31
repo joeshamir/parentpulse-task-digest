@@ -3,6 +3,7 @@ import type { Task } from "@/lib/parentpulse-data";
 export type ActionItemRow = {
   id: string;
   group_name: string;
+  group_jid?: string | null;
   title: string;
   category: string;
   deadline: string | null;
