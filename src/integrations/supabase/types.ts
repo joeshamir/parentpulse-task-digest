@@ -19,6 +19,7 @@ export type Database = {
           category: string
           created_at: string
           deadline: string | null
+          group_jid: string | null
           group_name: string
           id: string
           is_completed: boolean
@@ -29,6 +30,7 @@ export type Database = {
           category?: string
           created_at?: string
           deadline?: string | null
+          group_jid?: string | null
           group_name: string
           id?: string
           is_completed?: boolean
@@ -39,6 +41,7 @@ export type Database = {
           category?: string
           created_at?: string
           deadline?: string | null
+          group_jid?: string | null
           group_name?: string
           id?: string
           is_completed?: boolean
