@@ -49,6 +49,8 @@ export function TaskCard({
   const [dragging, setDragging] = useState(false);
   const start = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  // True right after a swipe, so the closing tap doesn't also open WhatsApp.
+  const movedRef = useRef(false);
 
   // The delete panel sits on the trailing edge in LTR and the leading (right)
   // edge in RTL — in both cases it is on the right, so the card always slides left.
