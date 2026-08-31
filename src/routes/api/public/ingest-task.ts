@@ -8,6 +8,8 @@ const payloadSchema = z.object({
   // derived from the token server-side, never taken from the request body.
   worker_token: z.string().min(1),
   group_name: z.string().min(1).max(200),
+  // WhatsApp group address (e.g. 1203...@g.us). Metadata only — never message content.
+  group_jid: z.string().max(120).optional().nullable(),
   title: z.string().min(1).max(500),
   category: z.string().max(50).optional().nullable(),
   deadline: z
