@@ -89,7 +89,45 @@ export function TaskCard({
     if (!dragging) return;
     setDragging(false);
     start.current = null;
+    const moved = Math.abs(offset) > 6;
+    movedRef.current = moved;
     setOffset(Math.abs(offset) > REVEAL / 2 ? REVEAL * dir : 0);
+  }
+
+  const canOpen = Boolean(task.groupJid);
+  const isMobile =
+    typeof navigator !== "undefined" && /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  function openInWhatsApp() {
+    // Ignore the tap that ends a swipe, or a tap while the delete panel is open.
+    if (movedRef.current || open) {
+      movedRef.current = false;
+      return;
+    }
+    if (!task.groupJid) return;
+
+    if (!isMobile) {
+      void navigator.clipboard?.writeText(task.groupName ?? "").catch(() => {});
+      toast.info(
+        t({
+          en: "Group chats open in WhatsApp on your phone. Group name copied.",
+          he: "צ'אטים קבוצתיים נפתחים בוואטסאפ בטלפון. שם הקבוצה הועתק.",
+        }),
+      );
+      return;
+    }
+
+    let left = false;
+    const onHide = () => {
+      left = true;
+    };
+    document.addEventListener("visibilitychange", onHide, { once: true });
+    window.location.href = `whatsapp://chat?jid=${encodeURIComponent(task.groupJid)}`;
+    // If the deep link didn't take, at least land the user inside WhatsApp.
+    window.setTimeout(() => {
+      document.removeEventListener("visibilitychange", onHide);
+      if (!left && !document.hidden) window.location.href = "whatsapp://";
+    }, 1200);
   }
 
   return (
