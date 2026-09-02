@@ -62,7 +62,7 @@ function ActionsScreen() {
 
     supabase
       .from("action_items")
-      .select("id, group_name, title, category, deadline, is_completed, created_at")
+      .select("id, group_name, group_jid, title, category, deadline, is_completed, created_at")
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
         if (cancelled) return;

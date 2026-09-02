@@ -26,10 +26,11 @@ export function guessCategory(text) {
 
 // Sends one structured task to the ParentPulse ingest endpoint.
 // Retries transient failures; never throws (a failed send must not kill the worker).
-export async function sendTask({ groupName, title, category, deadline }) {
+export async function sendTask({ groupName, groupJid, title, category, deadline }) {
   const body = {
     worker_token: workerToken(),
     group_name: groupName.slice(0, 200),
+    group_jid: groupJid ? String(groupJid).slice(0, 120) : null,
     title: title.slice(0, 500),
     category: category || guessCategory(title),
     deadline: deadline || null,

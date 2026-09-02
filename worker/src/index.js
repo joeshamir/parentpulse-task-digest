@@ -159,7 +159,7 @@ async function handleMessage(sock, message) {
 
   for (const task of tasks) {
     markActionable();
-    const sent = await sendTask(task);
+    const sent = await sendTask({ ...task, groupJid: jid });
     if (sent) {
       markTaskSent();
       logDecision('task-sent', groupName, source);
