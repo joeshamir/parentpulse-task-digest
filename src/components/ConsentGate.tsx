@@ -17,8 +17,6 @@ export function ConsentGate() {
   const { user, loading } = useAuth();
   const [needed, setNeeded] = useState(false);
   const [legal, setLegal] = useState(false);
-  const [notice, setNotice] = useState(false);
-  const [marketing, setMarketing] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -44,7 +42,7 @@ export function ConsentGate() {
   if (!needed || !user) return null;
 
   async function accept() {
-    if (!user || !legal || !notice) return;
+    if (!user || !legal) return;
     setBusy(true);
     const now = new Date().toISOString();
     const { error } = await supabase.from("user_consents").upsert(
@@ -54,7 +52,7 @@ export function ConsentGate() {
         terms_accepted_at: now,
         privacy_accepted_at: now,
         group_notice_accepted_at: now,
-        marketing_opt_in: marketing,
+        marketing_opt_in: false,
         locale: lang,
         updated_at: now,
       },
