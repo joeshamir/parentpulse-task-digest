@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/browser-client";
@@ -34,6 +34,11 @@ function AuthScreen() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
+  // Explicit, unbundled consent is required before an account may be created
+  // (Israeli Privacy Protection Law + GDPR). It is recorded once signed in.
+  const [agreeLegal, setAgreeLegal] = useState(false);
+  const [agreeNotice, setAgreeNotice] = useState(false);
+  const consentMissing = mode === "signup" && (!agreeLegal || !agreeNotice);
 
 
   useEffect(() => {
@@ -129,9 +134,46 @@ function AuthScreen() {
             placeholder={t({ en: "Password", he: "סיסמה" })}
             className="h-10 w-full rounded-lg border border-border bg-card px-3 text-[14px] outline-none focus:border-foreground/40"
           />
+          {mode === "signup" && (
+            <div className="space-y-2.5 pt-1">
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={agreeLegal}
+                  onChange={(e) => setAgreeLegal(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                />
+                <span className="text-[12px] leading-relaxed text-muted-foreground">
+                  {t({ en: "I agree to the ", he: "אני מסכים/ה ל" })}
+                  <Link to="/terms" className="font-semibold text-primary underline">
+                    {t({ en: "Terms of Use", he: "תנאי השימוש" })}
+                  </Link>
+                  {t({ en: " and the ", he: " ול" })}
+                  <Link to="/privacy" className="font-semibold text-primary underline">
+                    {t({ en: "Privacy Policy", he: "מדיניות הפרטיות" })}
+                  </Link>
+                  .
+                </span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2.5">
+                <input
+                  type="checkbox"
+                  checked={agreeNotice}
+                  onChange={(e) => setAgreeNotice(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+                />
+                <span className="text-[12px] leading-relaxed text-muted-foreground">
+                  {t({
+                    en: "I only connect groups I belong to, and I will tell their members that tasks are extracted from messages.",
+                    he: "אחבר רק קבוצות שאני חבר/ה בהן, ואיידע את חבריהן שמחולצות משימות מההודעות.",
+                  })}
+                </span>
+              </label>
+            </div>
+          )}
           <button
             type="submit"
-            disabled={busy}
+            disabled={busy || consentMissing}
             className="h-10 w-full rounded-lg bg-foreground text-[14px] font-semibold tracking-tight text-background disabled:opacity-50"
           >
             {mode === "signin"
