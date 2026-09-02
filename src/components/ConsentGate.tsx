@@ -107,35 +107,6 @@ export function ConsentGate() {
             </span>
           </label>
 
-          <label className="flex cursor-pointer items-start gap-2.5">
-            <input
-              type="checkbox"
-              checked={notice}
-              onChange={(e) => setNotice(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-            />
-            <span className="text-[13px] leading-relaxed text-card-foreground">
-              {t({
-                en: "I am a member of the groups I connect, and I take responsibility for telling group members that an assistant extracts action items from their messages.",
-                he: "אני חבר/ה בקבוצות שאחבר, ואני אחראי/ת ליידע את חברי הקבוצה שעוזר אישי מחלץ משימות מההודעות שלהם.",
-              })}
-            </span>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-2.5">
-            <input
-              type="checkbox"
-              checked={marketing}
-              onChange={(e) => setMarketing(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-            />
-            <span className="text-[13px] leading-relaxed text-muted-foreground">
-              {t({
-                en: "Optional: send me occasional product updates by email.",
-                he: "אופציונלי: אשמח לקבל עדכוני מוצר במייל מדי פעם.",
-              })}
-            </span>
-          </label>
         </div>
 
         <button
