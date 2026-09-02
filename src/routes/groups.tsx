@@ -190,6 +190,40 @@ function GroupsScreen() {
         </p>
       </header>
 
+      {/* Third-party notice duty: members of a tracked group should be told. */}
+      <section className="mt-4 px-5">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-[13px] font-semibold tracking-tight text-card-foreground">
+            {t({ en: "Let your groups know", he: "יידעו את הקבוצות שלכם" })}
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+            {t({
+              en: "Connecting a group means action items are extracted from its messages. Members should be told — you can paste this notice into the group.",
+              he: "חיבור קבוצה משמעו שמחולצות משימות מההודעות שבה. ראוי ליידע את חברי הקבוצה — אפשר להדביק את ההודעה הזו בקבוצה.",
+            })}
+          </p>
+          <button
+            onClick={() => {
+              const notice = t({
+                en: "Heads up: I use a personal assistant app that turns messages in this group into a short to-do list for me. It never saves message text, photos or voice notes — only a short task title. Tell me if you'd rather it didn't.",
+                he: "לידיעתכם: אני משתמש/ת באפליקציית עוזר אישי שהופכת הודעות בקבוצה הזו לרשימת משימות קצרה עבורי. היא לא שומרת טקסט של הודעות, תמונות או הקלטות — רק כותרת משימה קצרה. אם זה לא מקובל עליכם, אשמח לדעת.",
+              });
+              void navigator.clipboard
+                ?.writeText(notice)
+                .then(() =>
+                  toast.success(t({ en: "Notice copied.", he: "ההודעה הועתקה." })),
+                )
+                .catch(() =>
+                  toast.error(t({ en: "Could not copy.", he: "לא ניתן להעתיק." })),
+                );
+            }}
+            className="mt-2.5 rounded-md border border-border px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {t({ en: "Copy notice for the group", he: "העתקת הודעה לקבוצה" })}
+          </button>
+        </div>
+      </section>
+
       {/* Search */}
       <section className="mt-5 px-5">
         <div className="relative">
