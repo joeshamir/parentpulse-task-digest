@@ -17,8 +17,6 @@ export function ConsentGate() {
   const { user, loading } = useAuth();
   const [needed, setNeeded] = useState(false);
   const [legal, setLegal] = useState(false);
-  const [notice, setNotice] = useState(false);
-  const [marketing, setMarketing] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -44,7 +42,7 @@ export function ConsentGate() {
   if (!needed || !user) return null;
 
   async function accept() {
-    if (!user || !legal || !notice) return;
+    if (!user || !legal) return;
     setBusy(true);
     const now = new Date().toISOString();
     const { error } = await supabase.from("user_consents").upsert(
@@ -54,7 +52,7 @@ export function ConsentGate() {
         terms_accepted_at: now,
         privacy_accepted_at: now,
         group_notice_accepted_at: now,
-        marketing_opt_in: marketing,
+        marketing_opt_in: false,
         locale: lang,
         updated_at: now,
       },
@@ -107,40 +105,11 @@ export function ConsentGate() {
             </span>
           </label>
 
-          <label className="flex cursor-pointer items-start gap-2.5">
-            <input
-              type="checkbox"
-              checked={notice}
-              onChange={(e) => setNotice(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-            />
-            <span className="text-[13px] leading-relaxed text-card-foreground">
-              {t({
-                en: "I am a member of the groups I connect, and I take responsibility for telling group members that an assistant extracts action items from their messages.",
-                he: "אני חבר/ה בקבוצות שאחבר, ואני אחראי/ת ליידע את חברי הקבוצה שעוזר אישי מחלץ משימות מההודעות שלהם.",
-              })}
-            </span>
-          </label>
-
-          <label className="flex cursor-pointer items-start gap-2.5">
-            <input
-              type="checkbox"
-              checked={marketing}
-              onChange={(e) => setMarketing(e.target.checked)}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
-            />
-            <span className="text-[13px] leading-relaxed text-muted-foreground">
-              {t({
-                en: "Optional: send me occasional product updates by email.",
-                he: "אופציונלי: אשמח לקבל עדכוני מוצר במייל מדי פעם.",
-              })}
-            </span>
-          </label>
         </div>
 
         <button
           onClick={() => void accept()}
-          disabled={!legal || !notice || busy}
+          disabled={!legal || busy}
           className="mt-5 h-10 w-full rounded-lg bg-primary text-[14px] font-semibold text-primary-foreground disabled:opacity-50"
         >
           {busy
