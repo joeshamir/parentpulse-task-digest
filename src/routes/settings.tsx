@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bell,
+  FileText,
   FlaskConical,
   Loader2,
   QrCode,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MobileShell } from "@/components/MobileShell";
+import { PrivacyControls } from "@/components/PrivacyControls";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
 import { useLang } from "@/lib/lang";
@@ -636,6 +638,8 @@ function SettingsScreen() {
         </div>
       </section>
 
+      <PrivacyControls />
+
       {/* Preferences */}
       <section className="mt-6 px-5">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -681,6 +685,20 @@ function SettingsScreen() {
               <ShieldCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="text-[14px] font-semibold tracking-tight text-card-foreground">
                 {t({ en: "Privacy & Security", he: "פרטיות ואבטחה" })}
+              </span>
+            </span>
+            <span className="text-[12px] font-semibold text-muted-foreground">
+              {dir === "rtl" ? "←" : "→"}
+            </span>
+          </Link>
+          <Link
+            to="/terms"
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+          >
+            <span className="flex min-w-0 items-center gap-2.5">
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="text-[14px] font-semibold tracking-tight text-card-foreground">
+                {t({ en: "Terms of Use", he: "תנאי שימוש" })}
               </span>
             </span>
             <span className="text-[12px] font-semibold text-muted-foreground">

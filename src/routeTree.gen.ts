@@ -15,6 +15,7 @@ import { Route as DigestRouteImport } from './routes/digest'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ApiRestartBridgeRouteImport } from './routes/api/restart-bridge'
 import { Route as ApiPublicClassifyTaskRouteImport } from './routes/api/public/classify-task'
 import { Route as ApiPublicIngestTaskRouteImport } from './routes/api/public/ingest-task'
@@ -50,6 +51,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRestartBridgeRoute = ApiRestartBridgeRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/classify-task': typeof ApiPublicClassifyTaskRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/classify-task': typeof ApiPublicClassifyTaskRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/groups': typeof GroupsRoute
   '/privacy': typeof PrivacyRoute
   '/settings': typeof SettingsRoute
+  '/terms': typeof TermsRoute
   '/api/restart-bridge': typeof ApiRestartBridgeRoute
   '/api/public/classify-task': typeof ApiPublicClassifyTaskRoute
   '/api/public/ingest-task': typeof ApiPublicIngestTaskRoute
@@ -135,6 +144,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/privacy'
     | '/settings'
+    | '/terms'
     | '/api/restart-bridge'
     | '/api/public/classify-task'
     | '/api/public/ingest-task'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/privacy'
     | '/settings'
+    | '/terms'
     | '/api/restart-bridge'
     | '/api/public/classify-task'
     | '/api/public/ingest-task'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/privacy'
     | '/settings'
+    | '/terms'
     | '/api/restart-bridge'
     | '/api/public/classify-task'
     | '/api/public/ingest-task'
@@ -178,6 +190,7 @@ export interface RootRouteChildren {
   GroupsRoute: typeof GroupsRoute
   PrivacyRoute: typeof PrivacyRoute
   SettingsRoute: typeof SettingsRoute
+  TermsRoute: typeof TermsRoute
   ApiRestartBridgeRoute: typeof ApiRestartBridgeRoute
   ApiPublicClassifyTaskRoute: typeof ApiPublicClassifyTaskRoute
   ApiPublicIngestTaskRoute: typeof ApiPublicIngestTaskRoute
@@ -228,6 +241,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/restart-bridge': {
@@ -282,6 +302,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsRoute: GroupsRoute,
   PrivacyRoute: PrivacyRoute,
   SettingsRoute: SettingsRoute,
+  TermsRoute: TermsRoute,
   ApiRestartBridgeRoute: ApiRestartBridgeRoute,
   ApiPublicClassifyTaskRoute: ApiPublicClassifyTaskRoute,
   ApiPublicIngestTaskRoute: ApiPublicIngestTaskRoute,

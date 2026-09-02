@@ -1,6 +1,7 @@
 import { Link, useLocation, useRouter } from "@tanstack/react-router";
 import { CheckCircle2, Settings, Users } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { ConsentGate } from "@/components/ConsentGate";
 import { useLang } from "@/lib/lang";
 
 const tabs = [
@@ -72,6 +73,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
           </ul>
         </nav>
       </div>
+      <ConsentGate />
     </div>
   );
 }
