@@ -109,7 +109,7 @@ export function ConsentGate() {
 
         <button
           onClick={() => void accept()}
-          disabled={!legal || !notice || busy}
+          disabled={!legal || busy}
           className="mt-5 h-10 w-full rounded-lg bg-primary text-[14px] font-semibold text-primary-foreground disabled:opacity-50"
         >
           {busy
