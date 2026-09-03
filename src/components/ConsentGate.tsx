@@ -44,7 +44,7 @@ export function ConsentGate() {
     };
   }, [user, loading]);
 
-  if (!needed || !user) return null;
+  if (!needed || !user || onLegalPage) return null;
 
   async function accept() {
     if (!user || !legal) return;
