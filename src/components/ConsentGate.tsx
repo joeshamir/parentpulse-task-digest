@@ -18,6 +18,11 @@ export function ConsentGate() {
   const [needed, setNeeded] = useState(false);
   const [legal, setLegal] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Let people actually read the legal pages before agreeing: never cover them.
+  const onLegalPage = useLocation({
+    select: (location) =>
+      location.pathname === "/terms" || location.pathname === "/privacy",
+  });
 
   useEffect(() => {
     if (loading || !user) {
