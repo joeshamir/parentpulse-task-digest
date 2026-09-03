@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/browser-client";
@@ -18,6 +18,11 @@ export function ConsentGate() {
   const [needed, setNeeded] = useState(false);
   const [legal, setLegal] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Let people actually read the legal pages before agreeing: never cover them.
+  const onLegalPage = useLocation({
+    select: (location) =>
+      location.pathname === "/terms" || location.pathname === "/privacy",
+  });
 
   useEffect(() => {
     if (loading || !user) {
@@ -39,7 +44,7 @@ export function ConsentGate() {
     };
   }, [user, loading]);
 
-  if (!needed || !user) return null;
+  if (!needed || !user || onLegalPage) return null;
 
   async function accept() {
     if (!user || !legal) return;
